@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Physica — Physics &amp; Mathematics Hub</title>
+<style>
+:root{
+  --bg-void:#05040d;
+  --bg-nebula1:#1b0e3a;
+  --bg-nebula2:#0e2a4a;
+  --accent:#8a5cff;
+  --accent2:#5cd6ff;
+  --text:#e8e6ff;
+  --text-dim:#9a94c4;
+  --glass:rgba(20,16,40,0.45);
+  --glass-border:rgba(255,255,255,0.08);
+  --blur:16px;
+  --alpha:0.45;
+  --danger:#ff5c7a;
+  --ok:#4ee6a8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Segoe UI',system-ui,sans-serif;
+  color:var(--text);
+  background:radial-gradient(ellipse at 20% 20%,var(--bg-nebula1),transparent 60%),
+             radial-gradient(ellipse at 80% 70%,var(--bg-nebula2),transparent 60%),
+             var(--bg-void);
+  overflow:hidden;
+  height:100vh;
+  position:relative;
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+#stars span{
+  position:absolute;background:#fff;border-radius:50%;
+  animation:twinkle var(--dur,3s) ease-in-out infinite;
+  opacity:.6;
+}
+@keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:1;}}
+#blackhole{
+  position:fixed;top:50%;left:50%;width:2px;height:2px;z-index:0;pointer-events:none;
+  box-shadow:0 0 200px 120px rgba(138,92,255,0.05);
+  animation:spin 40s linear infinite;
+}
+@keyframes spin{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
+
+.glass{
+  background:var(--glass);
+  backdrop-filter:blur(var(--blur));
+  -webkit-backdrop-filter:blur(var(--blur));
+  border:1px solid var(--glass-border);
+  border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.35);
+}
+button{
+  font-family:inherit;cursor:pointer;border:none;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#0a0818;font-weight:600;padding:10px 18px;font-size:14px;
+  transition:transform .15s,opacity .15s;
+}
+button:hover{transform:translateY(-1px);}
+button:active{transform:translateY(0);}
+button.ghost{
+  background:transparent;border:1px solid var(--glass-border);color:var(--text);
+}
+button.danger{background:linear-gradient(135deg,#ff5c7a,#ff8a5c);color:#1a0508;}
+button:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+input,textarea,select{
+  font-family:inherit;background:rgba(255,255,255,0.05);
+  border:1px solid var(--glass-border);border-radius:10px;
+  color:var(--text);padding:10px 12px;font-size:14px;outline:none;
+  transition:border-color .15s;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:rgba(138,92,255,0.4);border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+.hidden{display:none !important;}
+.center-screen{
+  position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+.panel{width:100%;max-width:440px;padding:32px;position:relative;}
+.panel h1{font-size:22px;margin-bottom:4px;background:linear-gradient(135deg,var(--accent2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.panel .sub{color:var(--text-dim);font-size:13px;margin-bottom:20px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;}
+.field input,.field textarea,.field select{width:100%;}
+.row{display:flex;gap:10px;}
+.row>*{flex:1;}
+.step-dots{display:flex;gap:6px;justify-content:center;margin-bottom:18px;}
+.step-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.15);}
+.step-dots span.active{background:var(--accent2);}
+.step-dots span.done{background:var(--ok);}
+.err{color:var(--danger);font-size:12px;margin-top:6px;min-height:14px;}
+.link-btn{background:none;border:none;color:var(--accent2);font-size:12px;padding:4px;text-decoration:underline;}
+
+.seq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0;}
+.seq-grid.wide{grid-template-columns:repeat(4,1fr);}
+.seq-item{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:22px;
+  border:1px solid var(--glass-border);border-radius:12px;background:rgba(255,255,255,0.04);
+  cursor:pointer;user-select:none;transition:all .12s;position:relative;
+}
+.seq-item.sel{border-color:var(--accent2);background:rgba(92,214,255,0.15);}
+.seq-item .badge{position:absolute;top:2px;right:4px;font-size:10px;color:var(--accent2);}
+.seq-current{min-height:24px;text-align:center;letter-spacing:4px;color:var(--accent2);margin:8px 0;font-size:18px;}
+
+#app,#fakeDash{position:fixed;inset:0;z-index:3;display:flex;}
+#authScreen{z-index:5;}
+
+/* Chat layout */
+#sidebar{width:300px;flex-shrink:0;display:flex;flex-direction:column;margin:10px 0 10px 10px;}
+#sidebar .sb-head{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--glass-border);}
+#sidebar .sb-head .name{font-weight:600;font-size:14px;}
+#sidebar .sb-head .status{font-size:11px;color:var(--text-dim);}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-weight:700;color:#0a0818;overflow:hidden;flex-shrink:0;}
+.avatar img{width:100%;height:100%;object-fit:cover;}
+#convList{flex:1;overflow-y:auto;padding:8px;}
+.conv-item{display:flex;gap:10px;padding:10px;border-radius:12px;cursor:pointer;align-items:center;}
+.conv-item:hover,.conv-item.active{background:rgba(255,255,255,0.06);}
+.conv-item .meta{flex:1;min-width:0;}
+.conv-item .top{display:flex;justify-content:space-between;font-size:13px;}
+.conv-item .prev{font-size:12px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px;}
+.dot.online{background:var(--ok);} .dot.idle{background:#ffd35c;} .dot.busy{background:var(--danger);} .dot.offline{background:#555;}
+
+#chatArea{flex:1;display:flex;flex-direction:column;margin:10px;}
+#chatHead{padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--glass-border);}
+#chatHead .who .name{font-size:14px;font-weight:600;}
+#chatHead .who .status{font-size:11px;color:var(--text-dim);}
+#chatHead .actions{margin-left:auto;display:flex;gap:8px;}
+#chatHead .actions button{padding:8px 10px;}
+#msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:4px;}
+.date-sep{text-align:center;color:var(--text-dim);font-size:11px;margin:14px 0 6px;}
+.msg-row{display:flex;margin-bottom:2px;}
+.msg-row.me{justify-content:flex-end;}
+.bubble{max-width:60%;padding:10px 14px;border-radius:16px;position:relative;font-size:14px;line-height:1.4;}
+.msg-row.me .bubble{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0818;border-bottom-right-radius:4px;}
+.msg-row.other .bubble{background:rgba(255,255,255,0.07);border:1px solid var(--glass-border);border-bottom-left-radius:4px;}
+.bubble .quote{border-left:2px solid var(--accent2);padding:4px 8px;margin-bottom:6px;font-size:12px;opacity:.75;border-radius:4px;background:rgba(0,0,0,0.15);}
+.bubble .meta{font-size:10px;opacity:.65;margin-top:4px;display:flex;gap:4px;align-items:center;justify-content:flex-end;}
+.bubble.deleted{font-style:italic;opacity:.5;}
+.bubble code{background:rgba(0,0,0,0.35);padding:1px 5px;border-radius:4px;font-family:Consolas,monospace;font-size:12.5px;}
+.bubble pre{background:rgba(0,0,0,0.35);padding:8px 10px;border-radius:8px;overflow-x:auto;margin:4px 0;font-family:Consolas,monospace;font-size:12.5px;}
+.tok-kw{color:#c792ea;} .tok-str{color:#c3e88d;} .tok-com{color:#676e95;} .tok-num{color:#f78c6c;}
+.reactions{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
+.reactions span{background:rgba(0,0,0,0.25);border-radius:10px;padding:1px 6px;font-size:12px;cursor:pointer;}
+.msg-actions{display:none;gap:2px;position:absolute;top:-14px;background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:2px;}
+.msg-row.me .msg-actions{right:0;} .msg-row.other .msg-actions{left:0;}
+.msg-row:hover .msg-actions{display:flex;}
+.msg-actions button{padding:4px 6px;font-size:12px;background:transparent;color:var(--text);}
+.pin-flag,.star-flag{font-size:10px;margin-right:3px;}
+img.att,video.att{max-width:220px;border-radius:10px;display:block;}
+.file-att{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.2);padding:8px;border-radius:10px;}
+.link-card{border:1px solid var(--glass-border);border-radius:10px;overflow:hidden;margin-top:6px;background:rgba(0,0,0,0.15);max-width:240px;}
+.link-card .lc-body{padding:8px;}
+.link-card .lc-title{font-size:12px;font-weight:600;}
+.link-card .lc-desc{font-size:11px;color:var(--text-dim);}
+#composer{padding:12px 16px;display:flex;gap:8px;align-items:flex-end;border-top:1px solid var(--glass-border);}
+#composer textarea{flex:1;resize:none;max-height:120px;}
+#draftBadge{font-size:10px;color:#ffd35c;}
+#replyBar{display:flex;align-items:center;gap:8px;padding:8px 16px;border-top:1px solid var(--glass-border);font-size:12px;}
+#replyBar .x{margin-left:auto;cursor:pointer;color:var(--danger);}
+.typing-ind{font-size:11px;color:var(--accent2);padding:0 16px 4px;}
+
+#blackout{position:fixed;inset:0;background:#000;z-index:50;opacity:0;pointer-events:none;transition:opacity .4s;}
+#blackout.on{opacity:1;pointer-events:all;}
+#blackout .msg{position:absolute;bottom:30px;left:0;right:0;text-align:center;color:#333;font-size:12px;}
+
+/* Fake dashboard */
+#fakeDash{flex-direction:column;background:linear-gradient(160deg,#0b1020,#0c1b2e);}
+.fd-head{padding:16px 24px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:12px;}
+.fd-head h2{font-size:16px;}
+.fd-tabs{display:flex;gap:6px;padding:10px 24px;flex-wrap:wrap;}
+.fd-tab{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.04);cursor:pointer;font-size:13px;border:1px solid var(--glass-border);}
+.fd-tab.active{background:rgba(138,92,255,0.25);}
+.fd-body{flex:1;overflow-y:auto;padding:20px 24px;}
+.fd-card{padding:16px;margin-bottom:14px;}
+.fd-card h3{font-size:14px;margin-bottom:8px;color:var(--accent2);}
+.formula{font-family:'Cambria Math',Georgia,serif;font-size:15px;padding:8px 0;color:var(--text);}
+.calc{max-width:320px;}
+.calc-disp{width:100%;text-align:right;font-size:22px;padding:12px;margin-bottom:8px;background:rgba(0,0,0,0.3);border-radius:10px;}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.calc-grid button{padding:14px 0;}
+
+/* Settings modal */
+#settingsModal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);}
+#settingsModal .panel{max-width:520px;max-height:80vh;overflow-y:auto;}
+.set-group{margin-bottom:18px;}
+.set-group h4{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:13px;gap:10px;}
+.switch{position:relative;width:42px;height:22px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.slider-tog{position:absolute;inset:0;background:rgba(255,255,255,0.15);border-radius:22px;cursor:pointer;transition:.2s;}
+.slider-tog:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.switch input:checked+.slider-tog{background:var(--accent);}
+.switch input:checked+.slider-tog:before{transform:translateX(20px);}
+.close-x{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-dim);font-size:20px;padding:4px;}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="blackhole"></div>
+
+<div id="authScreen" class="center-screen"></div>
+<div id="app" class="hidden"></div>
+<div id="fakeDash" class="hidden"></div>
+<div id="settingsModal" class="hidden"></div>
+<div id="blackout"><div class="msg">content hidden — swear filter active</div></div>
+
+<script>
+const VSC = {};
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+window.firebaseConfig = firebaseConfig;
+function firebaseConfigured(){ return !!(firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('YOUR_')!==0 && firebaseConfig.projectId && firebaseConfig.projectId.indexOf('YOUR_')!==0); }
+window.__VSC_CFG_OK = firebaseConfigured();
+window.onFirebaseReady = function(){ window.dispatchEvent(new Event('vsc-fb-ready')); };
+
+// Public "university" cover login: username `university` + this password opens ONLY the
+// physics/math hub, never the chat. Works on any device out of the box (hash is baked in).
+const UNIVERSITY_LOGIN = {
+  username: 'university',
+  salt: '1d981a0e806f324cd5d1e76db9ba26b8',
+  hash: '0d60ed95c39ac3f6888e83a16350615b2b512c7081259e72c68136e7c24521d2'
+};
+function waitForFirebase(timeoutMs){
+  return new Promise(resolve=>{
+    if(!window.__VSC_CFG_OK) return resolve(false);
+    if(window.__VSC_FB_READY) return resolve(true);
+    const to = setTimeout(()=>resolve(!!window.__VSC_FB_READY), timeoutMs||4000);
+    window.addEventListener('vsc-fb-ready', ()=>{ clearTimeout(to); resolve(true); }, {once:true});
+  });
+}
+function friendlyFbError(e){
+  const c = (e && e.code) || '';
+  if(c.indexOf('permission-denied')>=0) return 'Cloud denied that request — check your Firestore rules.';
+  if(c.indexOf('network-request-failed')>=0 || c.indexOf('unavailable')>=0) return 'Network error — check your connection.';
+  return 'Cloud error: ' + (e && e.message ? e.message : String(e));
+}
+async function fetchCloudUser(username){
+  if(!window.__VSC_CFG_OK) return null;
+  await waitForFirebase();
+  if(!window.FBX) return null;
+  const uname = username.toLowerCase();
+  const profSnap = await FBX.getDoc(FBX.doc(FBX.db, 'vsc_users', uname));
+  if(!profSnap.exists()) return null;
+  const profile = profSnap.data();
+  const secSnap = await FBX.getDoc(FBX.doc(FBX.db, 'vsc_users', uname, 'private', 'security'));
+  if(!secSnap.exists()) return null;
+  const sec = secSnap.data();
+  return {
+    username: profile.username, codename: profile.codename, bio: profile.bio||'',
+    avatar: profile.avatar||'', banner: profile.banner||'', deviceUid: profile.deviceUid,
+    master: sec.master, second: sec.second, phrase: sec.phrase, authKey: sec.authKey, questions: sec.questions,
+    layer7: { method: profile.layer7Method, hash: sec.layer7.hash, salt: sec.layer7.salt },
+    cloud: true
+  };
+}
+
+(function initStars(){
+  const box = document.getElementById('stars');
+  const n = 140;
+  let html = '';
+  for(let i=0;i<n;i++){
+    const size = (Math.random()*2+1).toFixed(1);
+    const top = (Math.random()*100).toFixed(2);
+    const left = (Math.random()*100).toFixed(2);
+    const dur = (Math.random()*4+2).toFixed(1);
+    const delay = (Math.random()*4).toFixed(1);
+    html += `<span style="width:${size}px;height:${size}px;top:${top}%;left:${left}%;--dur:${dur}s;animation-delay:${delay}s;"></span>`;
+  }
+  box.innerHTML = html;
+})();
+
+const Crypto = {
+  async hash(text, saltHex){
+    const enc = new TextEncoder();
+    const salt = saltHex ? this.fromHex(saltHex) : crypto.getRandomValues(new Uint8Array(16));
+    const keyMat = await crypto.subtle.importKey('raw', enc.encode(text), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits(
+      { name:'PBKDF2', salt, iterations:120000, hash:'SHA-256' }, keyMat, 256
+    );
+    return { hash: this.toHex(new Uint8Array(bits)), salt: this.toHex(salt) };
+  },
+  async verify(text, saltHex, hashHex){
+    const r = await this.hash(text, saltHex);
+    return r.hash === hashHex;
+  },
+  toHex(bytes){ return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(''); },
+  fromHex(hex){ const arr=new Uint8Array(hex.length/2); for(let i=0;i<arr.length;i++) arr[i]=parseInt(hex.substr(i*2,2),16); return arr; },
+  randomKey(len=20){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let out = '';
+    const buf = crypto.getRandomValues(new Uint8Array(len));
+    for(let i=0;i<len;i++){
+      out += chars[buf[i] % chars.length];
+      if((i+1)%4===0 && i!==len-1) out+='-';
+    }
+    return out;
+  }
+};
+
+const Store = {
+  db(){
+    let raw = localStorage.getItem('vsc_db');
+    if(!raw){
+      const fresh = { users:{}, settings:{}, sessionUser:null };
+      localStorage.setItem('vsc_db', JSON.stringify(fresh));
+      return fresh;
+    }
+    return JSON.parse(raw);
+  },
+  save(db){ localStorage.setItem('vsc_db', JSON.stringify(db)); },
+  getUser(username){ return this.db().users[username.toLowerCase()]; },
+  saveUser(user){
+    const db = this.db();
+    db.users[user.username.toLowerCase()] = user;
+    this.save(db);
+  },
+  setSession(username){ const db=this.db(); db.sessionUser=username; this.save(db); },
+  clearSession(){ const db=this.db(); db.sessionUser=null; this.save(db); },
+  getSettings(username){
+    const db = this.db();
+    return db.settings[username] || {
+      accent:'purple', blur:16, alpha:0.45, fontSize:14,
+      swearFilter:false, swearWords:'',
+      panicPassword:'', panicHotkey:'',
+      privacyMode:true, privacyReauth:'full', autoLockMin:0,
+      notifSound:true
+    };
+  },
+  saveSettings(username, s){ const db=this.db(); db.settings[username]=s; this.save(db); },
+  getChats(username){
+    const db = this.db();
+    db.chats = db.chats || {};
+    if(!db.chats[username]){
+      db.chats[username] = ChatApp.seedConversations();
+      this.save(db);
+    }
+    return db.chats[username];
+  },
+  saveChats(username, chats){ const db=this.db(); db.chats=db.chats||{}; db.chats[username]=chats; this.save(db); },
+  exportAll(){ return localStorage.getItem('vsc_db'); },
+  importAll(json){ localStorage.setItem('vsc_db', json); }
+};
+
+const QUESTION_POOL = [
+  "What was the name of your first pet?",
+  "What city were you born in?",
+  "What was your childhood nickname?",
+  "What is the name of your favorite teacher?",
+  "What was the make of your first vehicle?",
+  "What is your mother's maiden name?",
+  "What street did you grow up on?",
+  "What was the name of your first school?",
+  "What is your favorite book?",
+  "Who is your childhood best friend?",
+  "What was your first job?",
+  "What is your favorite constellation?"
+];
+
+const LAYER7_SETS = {
+  pattern: { label:'Pattern Unlock', cols:3, minLen:4, items:[0,1,2,3,4,5,6,7,8].map(i=>({id:i,label:'●'})) },
+  number: { label:'Number Sequence', cols:4, minLen:4, items:[1,2,3,4,5,6,7,8,9,' ',0,' '].map((v,i)=>({id:i,label:String(v)})) },
+  symbol: { label:'Symbol Sequence', cols:4, minLen:4, items:['★','☾','☉','⚛','Δ','Ω','λ','∞','✦','✧','☄','⬡'].map((v,i)=>({id:i,label:v})) },
+  astronomy: { label:'Astronomy Object Sequence', cols:4, minLen:4, items:['🌍','🌙','☀️','🪐','⭐','🌌','🕳️','✨','🌠','🔭','☄️','🛰️'].map((v,i)=>({id:i,label:v})) },
+  formula: { label:'Physics Formula Recognition', cols:2, minLen:4, items:[
+    'E = mc²','F = ma','∇×E = -∂B/∂t','iħ∂Ψ/∂t = HΨ',
+    'PV = nRT','a²+b²=c²','F = G(m₁m₂)/r²','S = k ln W'
+  ].map((v,i)=>({id:i,label:v})) }
+};
+
+function renderSeqPad(mount, key, minLen, cols, onChange){
+  const set = LAYER7_SETS[key];
+  const seq = [];
+  function draw(){
+    mount.innerHTML = `
+      <div class="seq-current">${seq.length? seq.map(()=>'●').join(' ') : ' '}</div>
+      <div class="seq-grid ${cols>3?'wide':''}">
+        ${set.items.map(it=>`<div class="seq-item" data-id="${it.id}"><span>${it.label}</span></div>`).join('')}
+      </div>
+      <div class="row">
+        <button type="button" class="ghost" data-act="undo">Undo</button>
+        <button type="button" class="ghost" data-act="clear">Clear</button>
+      </div>`;
+    mount.querySelectorAll('.seq-item').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        seq.push(el.dataset.id);
+        onChange(seq.slice());
+        draw();
+      });
+    });
+    mount.querySelector('[data-act="undo"]').addEventListener('click', ()=>{ seq.pop(); onChange(seq.slice()); draw(); });
+    mount.querySelector('[data-act="clear"]').addEventListener('click', ()=>{ seq.length=0; onChange(seq.slice()); draw(); });
+  }
+  draw();
+  return { get: ()=>seq.slice() };
+}
+
+const AuthFlow = {
+  screen: document.getElementById('authScreen'),
+  view: 'welcome',
+  signup: {},
+  errors: {},
+
+  go(view){ this.view = view; this.errors = {}; this.render(); },
+
+  render(){
+    const v = this.view;
+    if(v==='welcome') return this.renderWelcome();
+    if(v==='login') return this.renderLogin();
+    if(v==='loginLayer3') return this.renderLoginLayer3();
+    if(v==='loginLayer4') return this.renderLoginLayer4();
+    if(v==='loginLayer5') return this.renderLoginLayer5();
+    if(v==='loginLayer6') return this.renderLoginLayer6();
+    if(v==='loginLayer7') return this.renderLoginLayer7();
+    if(v.startsWith('signup')) return this.renderSignup(v);
+    if(v.startsWith('recover')) return this.renderRecover(v);
+  },
+
+  wrap(inner){
+    this.screen.innerHTML = `<div class="glass panel">${inner}</div>`;
+  },
+
+  renderWelcome(){
+    const users = Object.values(Store.db().users || {});
+    const accountsHtml = users.length ? `
+      <div style="font-size:12px;color:var(--text-dim);margin:18px 0 8px;">Saved profiles on this device</div>
+      <div id="acctList">
+        ${users.map(u=>`
+          <div class="conv-item" data-user="${escapeHtml(u.username)}" style="justify-content:space-between;">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="avatar">${escapeHtml((u.codename||u.username)[0].toUpperCase())}</div>
+              <div><div style="font-size:13px;">${escapeHtml(u.codename||u.username)}</div><div style="font-size:11px;color:var(--text-dim);">@${escapeHtml(u.username)}</div></div>
+            </div>
+            <span class="acct-remove" data-remove="${escapeHtml(u.username)}" title="Remove from this device" style="color:var(--danger);cursor:pointer;padding:4px 8px;">✕</span>
+          </div>`).join('')}
+      </div>` : '';
+    this.wrap(`
+      <h1>Physica</h1>
+      <div class="sub">Physics &amp; Mathematics Learning Hub</div>
+      ${accountsHtml}
+      <div class="field" style="margin-top:20px;">
+        <button style="width:100%" id="btnLogin">${users.length ? 'Sign in to another account' : 'Student Login'}</button>
+      </div>
+      <div class="field">
+        <button style="width:100%" class="ghost" id="btnSignup">${users.length ? 'Add another account' : 'New Student — Register'}</button>
+      </div>
+    `);
+    this.screen.querySelectorAll('[data-user]').forEach(el=>{
+      el.onclick = (e)=>{
+        if(e.target.dataset.remove) return;
+        this.prefillUser = el.dataset.user;
+        this.go('login');
+      };
+    });
+    this.screen.querySelectorAll('[data-remove]').forEach(el=>{
+      el.onclick = (e)=>{
+        e.stopPropagation();
+        const uname = el.dataset.remove;
+        if(!confirm('Remove '+uname+' from this device? (The account itself and its cloud data are not deleted — you can sign back in with its password.)')) return;
+        const db = Store.db(); delete db.users[uname.toLowerCase()]; Store.save(db);
+        this.renderWelcome();
+      };
+    });
+    document.getElementById('btnLogin').onclick = ()=>{ this.prefillUser = null; this.go('login'); };
+    document.getElementById('btnSignup').onclick = ()=>{ this.signup = {step:1}; this.go('signup1'); };
+  },
+
+  dots(step,total){
+    let out = '<div class="step-dots">';
+    for(let i=1;i<=total;i++) out += `<span class="${i<step?'done':i===step?'active':''}"></span>`;
+    return out+'</div>';
+  },
+
+  renderSignup(view){
+    const step = parseInt(view.replace('signup',''));
+    const s = this.signup;
+    if(step===1) return this.step1Identity();
+    if(step===2) return this.step2Master();
+    if(step===3) return this.step3Second();
+    if(step===4) return this.step4Questions();
+    if(step===5) return this.step5Phrase();
+    if(step===6) return this.step6Key();
+    if(step===7) return this.step7Layer();
+  },
+
+  step1Identity(){
+    this.wrap(`
+      ${this.dots(1,7)}
+      <h1>Student Profile</h1>
+      <div class="sub">Set up your account</div>
+      <div class="field"><label>Username (unique)</label><input id="f_username" value="${this.signup.username||''}"></div>
+      <div class="field"><label>Display Name</label><input id="f_codename" value="${this.signup.codename||''}"></div>
+      <div class="field"><label>Bio (optional)</label><textarea id="f_bio" rows="2">${this.signup.bio||''}</textarea></div>
+      <div class="err" id="e1"></div>
+      <div class="row">
+        <button class="ghost" id="back">Back</button>
+        <button id="next">Continue</button>
+      </div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('welcome');
+    document.getElementById('next').onclick = ()=>{
+      const username = document.getElementById('f_username').value.trim();
+      const codename = document.getElementById('f_codename').value.trim();
+      const bio = document.getElementById('f_bio').value.trim();
+      if(!/^[a-zA-Z0-9_]{3,20}$/.test(username)){
+        document.getElementById('e1').textContent = 'Username must be 3-20 chars, letters/numbers/underscore.'; return;
+      }
+      if(Store.getUser(username)){
+        document.getElementById('e1').textContent = 'That username is already taken.'; return;
+      }
+      if(!codename){ document.getElementById('e1').textContent = 'Codename is required.'; return; }
+      Object.assign(this.signup, {username, codename, bio});
+      this.go('signup2');
+    };
+  },
+
+  step2Master(){
+    this.wrap(`
+      ${this.dots(2,7)}
+      <h1>Account Password</h1>
+      <div class="sub">Create a strong password for your account</div>
+      <div class="field"><label>Password</label><input type="password" id="f_p1"></div>
+      <div class="field"><label>Confirm</label><input type="password" id="f_p2"></div>
+      <div class="err" id="e2"></div>
+      <div class="row">
+        <button class="ghost" id="back">Back</button>
+        <button id="next">Continue</button>
+      </div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('signup1');
+    document.getElementById('next').onclick = ()=>{
+      const p1 = document.getElementById('f_p1').value, p2 = document.getElementById('f_p2').value;
+      if(p1.length<8){ document.getElementById('e2').textContent='Minimum 8 characters.'; return; }
+      if(p1!==p2){ document.getElementById('e2').textContent='Passwords do not match.'; return; }
+      this.signup.masterRaw = p1;
+      this.go('signup3');
+    };
+  },
+
+  step3Second(){
+    this.wrap(`
+      ${this.dots(3,7)}
+      <h1>Backup Password</h1>
+      <div class="sub">A separate password used only for account recovery</div>
+      <div class="field"><label>Backup Password</label><input type="password" id="f_p1"></div>
+      <div class="field"><label>Confirm</label><input type="password" id="f_p2"></div>
+      <div class="err" id="e3"></div>
+      <div class="row">
+        <button class="ghost" id="back">Back</button>
+        <button id="next">Continue</button>
+      </div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('signup2');
+    document.getElementById('next').onclick = ()=>{
+      const p1 = document.getElementById('f_p1').value, p2 = document.getElementById('f_p2').value;
+      if(p1.length<6){ document.getElementById('e3').textContent='Minimum 6 characters.'; return; }
+      if(p1===this.signup.masterRaw){ document.getElementById('e3').textContent='Must differ from your Account Password.'; return; }
+      if(p1!==p2){ document.getElementById('e3').textContent='Passwords do not match.'; return; }
+      this.signup.secondRaw = p1;
+      if(!this.signup.pickedQ){
+        const idx = [...QUESTION_POOL.keys()].sort(()=>Math.random()-0.5).slice(0,3);
+        this.signup.pickedQ = idx.map(i=>QUESTION_POOL[i]);
+      }
+      this.go('signup4');
+    };
+  },
+
+  step4Questions(){
+    const qs = this.signup.pickedQ;
+    this.wrap(`
+      ${this.dots(4,7)}
+      <h1>Security Questions</h1>
+      <div class="sub">Answer three questions to help recover your account</div>
+      ${qs.map((q,i)=>`<div class="field"><label>${q}</label><input id="f_q${i}" value="${(this.signup.qAnswers&&this.signup.qAnswers[i])||''}"></div>`).join('')}
+      <div class="err" id="e4"></div>
+      <div class="row">
+        <button class="ghost" id="back">Back</button>
+        <button id="next">Continue</button>
+      </div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('signup3');
+    document.getElementById('next').onclick = ()=>{
+      const answers = qs.map((_,i)=>document.getElementById('f_q'+i).value.trim());
+      if(answers.some(a=>!a)){ document.getElementById('e4').textContent='Answer all questions.'; return; }
+      this.signup.qAnswers = answers;
+      this.go('signup5');
+    };
+  },
+
+  step5Phrase(){
+    this.wrap(`
+      ${this.dots(5,7)}
+      <h1>Recovery Phrase</h1>
+      <div class="sub">A memorable phrase only you know</div>
+      <div class="field"><label>Recovery Phrase</label><input id="f_ph" value="${this.signup.phraseRaw||''}"></div>
+      <div class="err" id="e5"></div>
+      <div class="row">
+        <button class="ghost" id="back">Back</button>
+        <button id="next">Continue</button>
+      </div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('signup4');
+    document.getElementById('next').onclick = ()=>{
+      const ph = document.getElementById('f_ph').value.trim();
+      if(ph.length<6){ document.getElementById('e5').textContent='Minimum 6 characters.'; return; }
+      this.signup.phraseRaw = ph;
+      if(!this.signup.authKey) this.signup.authKey = Crypto.randomKey();
+      this.go('signup6');
+    };
+  },
+
+  step6Key(){
+    this.wrap(`
+      ${this.dots(6,7)}
+      <h1>Recovery Key</h1>
+      <div class="sub">Generated once. Save it somewhere safe; it will not be shown again.</div>
+      <div class="field">
+        <input id="f_key" readonly value="${this.signup.authKey}" style="text-align:center;letter-spacing:2px;font-weight:600;">
+      </div>
+      <button type="button" class="ghost" id="copyKey" style="width:100%;margin-bottom:14px;">Copy Key</button>
+      <div class="field" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="f_saved" style="width:auto;">
+        <label for="f_saved" style="margin:0;">I have saved this key</label>
+      </div>
+      <div class="err" id="e6"></div>
+      <div class="row">
+        <button class="ghost" id="back">Back</button>
+        <button id="next">Continue</button>
+      </div>
+    `);
+    document.getElementById('copyKey').onclick = ()=>navigator.clipboard.writeText(this.signup.authKey);
+    document.getElementById('back').onclick = ()=>this.go('signup5');
+    document.getElementById('next').onclick = ()=>{
+      if(!document.getElementById('f_saved').checked){ document.getElementById('e6').textContent='Confirm you saved the key.'; return; }
+      this.go('signup7');
+    };
+  },
+
+  step7Layer(){
+    const chosen = this.signup.layer7Method;
+    const methods = [['pattern','Pattern Unlock'],['number','Number Sequence'],['symbol','Symbol Sequence'],['astronomy','Astronomy Object Sequence'],['formula','Physics Formula Recognition']];
+    this.wrap(`
+      ${this.dots(7,7)}
+      <h1>Quick Access Method</h1>
+      <div class="sub">Choose one method for fast daily sign-in</div>
+      <div class="field">
+        <select id="f_method">
+          <option value="">Select a method...</option>
+          ${methods.map(([k,l])=>`<option value="${k}" ${chosen===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div id="padMount"></div>
+      <div class="field" id="confirmWrap" style="display:none;">
+        <label>Re-enter your sequence to confirm</label>
+        <div id="padMount2"></div>
+      </div>
+      <div class="err" id="e7"></div>
+      <div class="row">
+        <button class="ghost" id="back">Back</button>
+        <button id="next" disabled>Create Account</button>
+      </div>
+    `);
+    let seq1 = null, seq2 = null;
+    const padMount = document.getElementById('padMount');
+    const padMount2 = document.getElementById('padMount2');
+    const nextBtn = document.getElementById('next');
+    function checkReady(){ nextBtn.disabled = !(seq1 && seq1.length>=4 && seq2 && seq2.length===seq1.length && seq2.every((v,i)=>v===seq1[i])); }
+    document.getElementById('f_method').onchange = (e)=>{
+      const key = e.target.value;
+      seq1 = null; seq2 = null;
+      padMount2.innerHTML=''; document.getElementById('confirmWrap').style.display='none';
+      if(!key){ padMount.innerHTML=''; return; }
+      this.signup.layer7Method = key;
+      const set = LAYER7_SETS[key];
+      renderSeqPad(padMount, key, set.minLen, set.cols, (s)=>{
+        seq1 = s;
+        if(s.length>=set.minLen){
+          document.getElementById('confirmWrap').style.display='block';
+          renderSeqPad(padMount2, key, set.minLen, set.cols, (s2)=>{ seq2=s2; checkReady(); });
+        } else {
+          document.getElementById('confirmWrap').style.display='none';
+          checkReady();
+        }
+      });
+    };
+    document.getElementById('back').onclick = ()=>this.go('signup6');
+    nextBtn.onclick = async ()=>{
+      this.signup.layer7Seq = seq1;
+      await this.finishSignup();
+    };
+  },
+
+  async finishSignup(){
+    const s = this.signup;
+    const master = await Crypto.hash(s.masterRaw);
+    const second = await Crypto.hash(s.secondRaw);
+    const phrase = await Crypto.hash(s.phraseRaw.toLowerCase());
+    const key = await Crypto.hash(s.authKey);
+    const layer7 = await Crypto.hash(s.layer7Seq.join(','));
+    const questions = [];
+    for(let i=0;i<s.pickedQ.length;i++){
+      questions.push({ q:s.pickedQ[i], ...(await Crypto.hash(s.qAnswers[i].toLowerCase())) });
+    }
+    const user = {
+      username: s.username, codename: s.codename, bio: s.bio||'',
+      avatar:'', banner:'', createdAt: Date.now(),
+      master, second, phrase, authKey:key, questions,
+      layer7: { method: s.layer7Method, ...layer7 }
+    };
+    if(window.__VSC_CFG_OK){
+      const ready = await waitForFirebase();
+      if(!ready){ this.showFatalError('signup7', 'Could not reach the cloud backend. Check your connection and try again.'); return; }
+      try{
+        const uname = s.username.toLowerCase();
+        const profRef = FBX.doc(FBX.db, 'vsc_users', uname);
+        const existing = await FBX.getDoc(profRef);
+        if(existing.exists()){ this.showFatalError('signup1', 'That username is already taken.'); return; }
+        user.deviceUid = FBX.auth.currentUser.uid;
+        user.cloud = true;
+        await FBX.setDoc(profRef, {
+          username: user.username, codename: user.codename, bio: user.bio,
+          avatar:'', banner:'', deviceUid: user.deviceUid, layer7Method: s.layer7Method,
+          createdAt: Date.now(), lastActive: Date.now()
+        });
+        await FBX.setDoc(FBX.doc(FBX.db, 'vsc_users', uname, 'private', 'security'), {
+          master, second, phrase, authKey:key, questions, layer7:{ method:s.layer7Method, ...layer7 }
+        });
+      }catch(e){
+        this.showFatalError('signup7', friendlyFbError(e));
+        return;
+      }
+    }
+    Store.saveUser(user);
+    Store.setSession(user.username);
+    this.signup = {};
+    VSC.onAuthenticated(user.username, false);
+  },
+
+  showFatalError(view, message){
+    this.go(view);
+    const err = this.screen.querySelector('.err');
+    if(err) err.textContent = message;
+  },
+
+  renderLogin(){
+    this.wrap(`
+      <h1>Sign In</h1>
+      <div class="sub">Continue your coursework</div>
+      <div class="field"><label>Username</label><input id="f_u" autocomplete="username"></div>
+      <div class="field"><label>Password</label><input type="password" id="f_p" autocomplete="current-password"></div>
+      <div class="err" id="eLogin"></div>
+      <div class="row">
+        <button class="ghost" id="back">Back</button>
+        <button id="next">Continue</button>
+      </div>
+      <div style="text-align:center;margin-top:14px;">
+        <button type="button" class="link-btn" id="forgot">Forgot access?</button>
+      </div>
+    `);
+    if(this.prefillUser){
+      document.getElementById('f_u').value = this.prefillUser;
+      this.prefillUser = null;
+      setTimeout(()=>document.getElementById('f_p').focus(), 0);
+    }
+    document.getElementById('back').onclick = ()=>this.go('welcome');
+    document.getElementById('forgot').onclick = ()=>{ this.recover = {step:1}; this.go('recover1'); };
+    document.getElementById('next').onclick = async ()=>{
+      const username = document.getElementById('f_u').value.trim();
+      const pass = document.getElementById('f_p').value;
+      const err = document.getElementById('eLogin');
+      if(!username || !pass){ err.textContent='Enter a username and password.'; return; }
+      if(username.toLowerCase() === UNIVERSITY_LOGIN.username){
+        const ok = await Crypto.verify(pass, UNIVERSITY_LOGIN.salt, UNIVERSITY_LOGIN.hash);
+        if(!ok){ err.textContent='Invalid username or password.'; return; }
+        VSC.openUniversityHub();
+        return;
+      }
+      const settings = Store.getSettings(username);
+      if(settings.panicPassword && pass === settings.panicPassword){
+        const localUser = Store.getUser(username);
+        if(localUser){ Store.setSession(username); VSC.onAuthenticated(username, true); return; }
+      }
+      if(window.__VSC_CFG_OK){
+        const ready = await waitForFirebase();
+        if(!ready){ err.textContent = 'Could not reach the cloud backend. Check your connection and try again.'; return; }
+        try{
+          const user = await fetchCloudUser(username);
+          if(!user){ err.textContent = 'Invalid username or password.'; return; }
+          const ok = await Crypto.verify(pass, user.master.salt, user.master.hash);
+          if(!ok){ err.textContent = 'Invalid username or password.'; return; }
+          user.deviceUid = FBX.auth.currentUser.uid;
+          await FBX.updateDoc(FBX.doc(FBX.db, 'vsc_users', username.toLowerCase()), { deviceUid: user.deviceUid, lastActive: Date.now() }).catch(()=>{});
+          Store.saveUser(user);
+          this.loginUser = user;
+          this.go('loginLayer3');
+        }catch(e){ err.textContent = friendlyFbError(e); }
+        return;
+      }
+      const user = Store.getUser(username);
+      if(!user){ err.textContent='Invalid username or password.'; return; }
+      const ok = await Crypto.verify(pass, user.master.salt, user.master.hash);
+      if(!ok){ err.textContent='Invalid username or password.'; return; }
+      this.loginUser = user;
+      this.go('loginLayer3');
+    };
+  },
+
+  // Bail out of a half-finished multi-step login (Back before completing all layers).
+  abortLogin(toView){ this.loginUser = null; this.go(toView || 'login'); },
+
+  renderLoginLayer3(){
+    const user = this.loginUser;
+    if(!user) return this.go('login');
+    this.wrap(`
+      ${this.dots(2,6)}
+      <h1>Sign In</h1>
+      <div class="sub">Step 2 of 6 — Backup Password</div>
+      <div class="field"><label>Backup Password</label><input type="password" id="f_p"></div>
+      <div class="err" id="e"></div>
+      <div class="row"><button class="ghost" id="back">Back</button><button id="next">Continue</button></div>
+    `);
+    const submit = async ()=>{
+      const ok = await Crypto.verify(document.getElementById('f_p').value, user.second.salt, user.second.hash);
+      if(!ok){ document.getElementById('e').textContent='Incorrect backup password.'; return; }
+      this.go('loginLayer4');
+    };
+    document.getElementById('back').onclick = ()=>this.abortLogin('login');
+    document.getElementById('next').onclick = submit;
+    document.getElementById('f_p').onkeydown = (e)=>{ if(e.key==='Enter') submit(); };
+  },
+
+  renderLoginLayer4(){
+    const user = this.loginUser;
+    if(!user) return this.go('login');
+    const qs = user.questions;
+    this.wrap(`
+      ${this.dots(3,6)}
+      <h1>Sign In</h1>
+      <div class="sub">Step 3 of 6 — Security Questions</div>
+      ${qs.map((q,i)=>`<div class="field"><label>${escapeHtml(q.q)}</label><input id="f_q${i}"></div>`).join('')}
+      <div class="err" id="e"></div>
+      <div class="row"><button class="ghost" id="back">Back</button><button id="next">Continue</button></div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('loginLayer3');
+    document.getElementById('next').onclick = async ()=>{
+      for(let i=0;i<qs.length;i++){
+        const ok = await Crypto.verify(document.getElementById('f_q'+i).value.trim().toLowerCase(), qs[i].salt, qs[i].hash);
+        if(!ok){ document.getElementById('e').textContent='One or more answers are incorrect.'; return; }
+      }
+      this.go('loginLayer5');
+    };
+  },
+
+  renderLoginLayer5(){
+    const user = this.loginUser;
+    if(!user) return this.go('login');
+    this.wrap(`
+      ${this.dots(4,6)}
+      <h1>Sign In</h1>
+      <div class="sub">Step 4 of 6 — Recovery Phrase</div>
+      <div class="field"><label>Recovery Phrase</label><input id="f_ph"></div>
+      <div class="err" id="e"></div>
+      <div class="row"><button class="ghost" id="back">Back</button><button id="next">Continue</button></div>
+    `);
+    const submit = async ()=>{
+      const ok = await Crypto.verify(document.getElementById('f_ph').value.trim().toLowerCase(), user.phrase.salt, user.phrase.hash);
+      if(!ok){ document.getElementById('e').textContent='Incorrect phrase.'; return; }
+      this.go('loginLayer6');
+    };
+    document.getElementById('back').onclick = ()=>this.go('loginLayer4');
+    document.getElementById('next').onclick = submit;
+    document.getElementById('f_ph').onkeydown = (e)=>{ if(e.key==='Enter') submit(); };
+  },
+
+  renderLoginLayer6(){
+    const user = this.loginUser;
+    if(!user) return this.go('login');
+    this.wrap(`
+      ${this.dots(5,6)}
+      <h1>Sign In</h1>
+      <div class="sub">Step 5 of 6 — Recovery Key</div>
+      <div class="field"><label>Recovery Key</label><input id="f_k" style="text-align:center;letter-spacing:2px;"></div>
+      <div class="err" id="e"></div>
+      <div class="row"><button class="ghost" id="back">Back</button><button id="next">Continue</button></div>
+    `);
+    const submit = async ()=>{
+      const ok = await Crypto.verify(document.getElementById('f_k').value.trim().toUpperCase(), user.authKey.salt, user.authKey.hash);
+      if(!ok){ document.getElementById('e').textContent='Incorrect key.'; return; }
+      this.go('loginLayer7');
+    };
+    document.getElementById('back').onclick = ()=>this.go('loginLayer5');
+    document.getElementById('next').onclick = submit;
+    document.getElementById('f_k').onkeydown = (e)=>{ if(e.key==='Enter') submit(); };
+  },
+
+  renderLoginLayer7(){
+    const user = this.loginUser;
+    if(!user) return this.go('login');
+    const set = LAYER7_SETS[user.layer7.method];
+    this.wrap(`
+      ${this.dots(6,6)}
+      <h1>Quick Access</h1>
+      <div class="sub">Step 6 of 6 — ${set.label}</div>
+      <div id="padMount"></div>
+      <div class="err" id="e"></div>
+      <div class="row">
+        <button class="ghost" id="back">Back</button>
+        <button id="next" disabled>Sign In</button>
+      </div>
+    `);
+    let seq = null;
+    const nextBtn = document.getElementById('next');
+    renderSeqPad(document.getElementById('padMount'), user.layer7.method, set.minLen, set.cols, (s)=>{
+      seq = s; nextBtn.disabled = s.length < set.minLen;
+    });
+    document.getElementById('back').onclick = ()=>this.go('loginLayer6');
+    nextBtn.onclick = async ()=>{
+      const ok = await Crypto.verify(seq.join(','), user.layer7.salt, user.layer7.hash);
+      if(!ok){ document.getElementById('e').textContent='Sequence incorrect.'; return; }
+      Store.setSession(user.username);
+      this.loginUser = null;
+      VSC.onAuthenticated(user.username, false);
+    };
+  },
+
+  renderRecover(view){
+    const step = parseInt(view.replace('recover',''));
+    if(step===1) return this.rStep1();
+    if(step===2) return this.rStep2();
+    if(step===3) return this.rStep3();
+    if(step===4) return this.rStep4();
+    if(step===5) return this.rStep5reset();
+  },
+
+  rStep1(){
+    this.wrap(`
+      <h1>Recover Your Account</h1>
+      <div class="sub">Step 1 of 4 — Username &amp; Backup Password</div>
+      <div class="field"><label>Username</label><input id="f_u"></div>
+      <div class="field"><label>Backup Password</label><input type="password" id="f_p"></div>
+      <div class="err" id="e"></div>
+      <div class="row"><button class="ghost" id="back">Back</button><button id="next">Continue</button></div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('login');
+    document.getElementById('next').onclick = async ()=>{
+      const uname = document.getElementById('f_u').value.trim();
+      const err = document.getElementById('e');
+      let u = Store.getUser(uname);
+      if(!u && window.__VSC_CFG_OK){ u = await fetchCloudUser(uname); }
+      if(!u){ err.textContent='Account not found.'; return; }
+      const ok = await Crypto.verify(document.getElementById('f_p').value, u.second.salt, u.second.hash);
+      if(!ok){ err.textContent='Incorrect backup password.'; return; }
+      this.recover = { user:u };
+      this.go('recover2');
+    };
+  },
+
+  rStep2(){
+    this.wrap(`
+      <h1>Recover Your Account</h1>
+      <div class="sub">Step 2 of 4 — Recovery Phrase</div>
+      <div class="field"><label>Recovery Phrase</label><input id="f_ph"></div>
+      <div class="err" id="e"></div>
+      <div class="row"><button class="ghost" id="back">Back</button><button id="next">Continue</button></div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('recover1');
+    document.getElementById('next').onclick = async ()=>{
+      const u = this.recover.user;
+      const ok = await Crypto.verify(document.getElementById('f_ph').value.trim().toLowerCase(), u.phrase.salt, u.phrase.hash);
+      if(!ok){ document.getElementById('e').textContent='Incorrect phrase.'; return; }
+      this.go('recover3');
+    };
+  },
+
+  rStep3(){
+    const qs = this.recover.user.questions;
+    this.wrap(`
+      <h1>Recover Your Account</h1>
+      <div class="sub">Step 3 of 4 — Security Questions</div>
+      ${qs.map((q,i)=>`<div class="field"><label>${q.q}</label><input id="f_q${i}"></div>`).join('')}
+      <div class="err" id="e"></div>
+      <div class="row"><button class="ghost" id="back">Back</button><button id="next">Continue</button></div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('recover2');
+    document.getElementById('next').onclick = async ()=>{
+      for(let i=0;i<qs.length;i++){
+        const ok = await Crypto.verify(document.getElementById('f_q'+i).value.trim().toLowerCase(), qs[i].salt, qs[i].hash);
+        if(!ok){ document.getElementById('e').textContent='One or more answers are incorrect.'; return; }
+      }
+      this.go('recover4');
+    };
+  },
+
+  rStep4(){
+    this.wrap(`
+      <h1>Recover Your Account</h1>
+      <div class="sub">Step 4 of 4 — Recovery Key</div>
+      <div class="field"><label>Recovery Key</label><input id="f_k" style="text-align:center;letter-spacing:2px;"></div>
+      <div class="err" id="e"></div>
+      <div class="row"><button class="ghost" id="back">Back</button><button id="next">Continue</button></div>
+    `);
+    document.getElementById('back').onclick = ()=>this.go('recover3');
+    document.getElementById('next').onclick = async ()=>{
+      const u = this.recover.user;
+      const ok = await Crypto.verify(document.getElementById('f_k').value.trim().toUpperCase(), u.authKey.salt, u.authKey.hash);
+      if(!ok){ document.getElementById('e').textContent='Incorrect key.'; return; }
+      this.go('recover5');
+    };
+  },
+
+  rStep5reset(){
+    const u = this.recover.user;
+    const methods = [['pattern','Pattern Unlock'],['number','Number Sequence'],['symbol','Symbol Sequence'],['astronomy','Astronomy Object Sequence'],['formula','Physics Formula Recognition']];
+    this.wrap(`
+      <h1>Reset Credentials</h1>
+      <div class="sub">Set a new password and Quick Access method</div>
+      <div class="field"><label>New Password</label><input type="password" id="f_p1"></div>
+      <div class="field"><label>Confirm</label><input type="password" id="f_p2"></div>
+      <div class="field">
+        <select id="f_method">
+          <option value="">Select a method...</option>
+          ${methods.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}
+        </select>
+      </div>
+      <div id="padMount"></div>
+      <div class="field" id="confirmWrap" style="display:none;"><label>Re-enter to confirm</label><div id="padMount2"></div></div>
+      <div class="err" id="e"></div>
+      <button id="next" disabled style="width:100%;">Reset &amp; Sign In</button>
+    `);
+    let seq1=null, seq2=null, pwOk=false;
+    const nextBtn = document.getElementById('next');
+    function checkReady(){ nextBtn.disabled = !(pwOk && seq1 && seq2 && seq1.length===seq2.length && seq1.every((v,i)=>v===seq2[i])); }
+    document.getElementById('f_p1').oninput = document.getElementById('f_p2').oninput = ()=>{
+      const p1=document.getElementById('f_p1').value, p2=document.getElementById('f_p2').value;
+      pwOk = p1.length>=8 && p1===p2; checkReady();
+    };
+    const padMount = document.getElementById('padMount'), padMount2 = document.getElementById('padMount2');
+    let chosenMethod = '';
+    document.getElementById('f_method').onchange = (e)=>{
+      chosenMethod = e.target.value; seq1=null; seq2=null;
+      padMount2.innerHTML=''; document.getElementById('confirmWrap').style.display='none';
+      if(!chosenMethod){ padMount.innerHTML=''; return; }
+      const set = LAYER7_SETS[chosenMethod];
+      renderSeqPad(padMount, chosenMethod, set.minLen, set.cols, (s)=>{
+        seq1=s;
+        if(s.length>=set.minLen){
+          document.getElementById('confirmWrap').style.display='block';
+          renderSeqPad(padMount2, chosenMethod, set.minLen, set.cols, (s2)=>{ seq2=s2; checkReady(); });
+        } else { checkReady(); }
+      });
+    };
+    nextBtn.onclick = async ()=>{
+      const newMaster = await Crypto.hash(document.getElementById('f_p1').value);
+      const newLayer7 = { method: chosenMethod, ...(await Crypto.hash(seq1.join(','))) };
+      u.master = newMaster;
+      u.layer7 = newLayer7;
+      if(u.cloud && window.__VSC_CFG_OK){
+        const ready = await waitForFirebase();
+        if(!ready){ document.getElementById('e').textContent = 'Could not reach the cloud backend.'; return; }
+        try{
+          u.deviceUid = FBX.auth.currentUser.uid;
+          await FBX.updateDoc(FBX.doc(FBX.db, 'vsc_users', u.username.toLowerCase(), 'private', 'security'), { master:newMaster, layer7:newLayer7 });
+          await FBX.updateDoc(FBX.doc(FBX.db, 'vsc_users', u.username.toLowerCase()), { layer7Method: chosenMethod, deviceUid: u.deviceUid, lastActive: Date.now() });
+        }catch(e){ document.getElementById('e').textContent = friendlyFbError(e); return; }
+      }
+      Store.saveUser(u);
+      Store.setSession(u.username);
+      this.recover = {};
+      VSC.onAuthenticated(u.username, false);
+    };
+  }
+};
+
+const SafeMath = {
+  eval(expr, scope){
+    scope = scope || {};
+    const tokens = this.tokenize(expr);
+    const rpn = this.toRPN(tokens);
+    return this.evalRPN(rpn, scope);
+  },
+  tokenize(expr){
+    const out = []; let i=0;
+    const funcs = ['sin','cos','tan','asin','acos','atan','sqrt','log','ln','abs','floor','ceil','round'];
+    while(i<expr.length){
+      const c = expr[i];
+      if(/\s/.test(c)){ i++; continue; }
+      if(/[0-9.]/.test(c)){
+        let j=i; while(j<expr.length && /[0-9.]/.test(expr[j])) j++;
+        out.push({t:'num', v:parseFloat(expr.slice(i,j))}); i=j; continue;
+      }
+      if(/[a-zA-Z]/.test(c)){
+        let j=i; while(j<expr.length && /[a-zA-Z]/.test(expr[j])) j++;
+        const word = expr.slice(i,j);
+        if(funcs.includes(word)) out.push({t:'func', v:word});
+        else if(word==='pi') out.push({t:'num', v:Math.PI});
+        else if(word==='e') out.push({t:'num', v:Math.E});
+        else out.push({t:'var', v:word});
+        i=j; continue;
+      }
+      if('+-*/^%(),'.includes(c)){ out.push({t:'op', v:c}); i++; continue; }
+      throw new Error('Invalid character: '+c);
+    }
+    return out;
+  },
+  toRPN(tokens){
+    const prec = {'+':2,'-':2,'*':3,'/':3,'%':3,'^':4};
+    const rightAssoc = {'^':true};
+    const out=[], ops=[];
+    let prevType = null;
+    tokens.forEach(tok=>{
+      if(tok.t==='num' || tok.t==='var'){ out.push(tok); prevType=tok.t; }
+      else if(tok.t==='func'){ ops.push(tok); prevType='func'; }
+      else if(tok.v===','){
+        while(ops.length && ops[ops.length-1].v!=='(') out.push(ops.pop());
+        prevType='comma';
+      }
+      else if(tok.v==='('){ ops.push(tok); prevType='('; }
+      else if(tok.v===')'){
+        while(ops.length && ops[ops.length-1].v!=='(') out.push(ops.pop());
+        ops.pop();
+        if(ops.length && ops[ops.length-1].t==='func') out.push(ops.pop());
+        prevType=')';
+      }
+      else {
+        let op = tok.v;
+        if(op==='-' && (prevType===null || prevType==='op' || prevType==='(' || prevType==='comma')){
+          out.push({t:'num',v:0}); op='-u';
+        }
+        const p1 = op==='-u'?5:prec[op];
+        while(ops.length){
+          const top = ops[ops.length-1];
+          if(top.t==='op' && top.v!=='(' ){
+            const p2 = top.v==='-u'?5:prec[top.v];
+            if((rightAssoc[op] ? p1<p2 : p1<=p2)) out.push(ops.pop());
+            else break;
+          } else break;
+        }
+        ops.push({t:'op', v:op});
+        prevType='op';
+      }
+    });
+    while(ops.length) out.push(ops.pop());
+    return out;
+  },
+  evalRPN(rpn, scope){
+    const st = [];
+    const un1 = {sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,sqrt:Math.sqrt,abs:Math.abs,floor:Math.floor,ceil:Math.ceil,round:Math.round,ln:Math.log,log:Math.log10};
+    rpn.forEach(tok=>{
+      if(tok.t==='num') st.push(tok.v);
+      else if(tok.t==='var'){ if(!(tok.v in scope)) throw new Error('Unknown var '+tok.v); st.push(scope[tok.v]); }
+      else if(tok.t==='func'){ const a=st.pop(); st.push(un1[tok.v](a)); }
+      else {
+        if(tok.v==='-u'){ const a=st.pop(); const b=st.pop(); st.push(b-a); return; }
+        const b=st.pop(), a=st.pop();
+        if(tok.v==='+') st.push(a+b);
+        else if(tok.v==='-') st.push(a-b);
+        else if(tok.v==='*') st.push(a*b);
+        else if(tok.v==='/') st.push(a/b);
+        else if(tok.v==='%') st.push(a%b);
+        else if(tok.v==='^') st.push(Math.pow(a,b));
+      }
+    });
+    return st.pop();
+  }
+};
+
+const FORMULAS = [
+  {cat:'Mechanics', name:"Newton's Second Law", f:'F = ma'},
+  {cat:'Mechanics', name:'Universal Gravitation', f:'F = G(m₁m₂)/r²'},
+  {cat:'Mechanics', name:'Kinetic Energy', f:'KE = ½mv²'},
+  {cat:'Mechanics', name:'Momentum', f:'p = mv'},
+  {cat:'Mechanics', name:'Centripetal Force', f:'F = mv²/r'},
+  {cat:'Mechanics', name:'Work-Energy Theorem', f:'W = ΔKE'},
+  {cat:'Electromagnetism', name:"Gauss's Law", f:'∇·E = ρ/ε₀'},
+  {cat:'Electromagnetism', name:"Faraday's Law", f:'∇×E = -∂B/∂t'},
+  {cat:'Electromagnetism', name:"Ampère's Law", f:'∇×B = μ₀J + μ₀ε₀∂E/∂t'},
+  {cat:'Electromagnetism', name:"Coulomb's Law", f:'F = k(q₁q₂)/r²'},
+  {cat:'Electromagnetism', name:"Ohm's Law", f:'V = IR'},
+  {cat:'Electromagnetism', name:'Electric Power', f:'P = VI'},
+  {cat:'Quantum', name:'Schrödinger Equation', f:'iħ ∂Ψ/∂t = ĤΨ'},
+  {cat:'Quantum', name:'Heisenberg Uncertainty', f:'Δx·Δp ≥ ħ/2'},
+  {cat:'Quantum', name:'Planck–Einstein Relation', f:'E = hf'},
+  {cat:'Quantum', name:'de Broglie Wavelength', f:'λ = h/p'},
+  {cat:'Thermodynamics', name:'Ideal Gas Law', f:'PV = nRT'},
+  {cat:'Thermodynamics', name:'Entropy (Boltzmann)', f:'S = k ln W'},
+  {cat:'Thermodynamics', name:'First Law of Thermodynamics', f:'ΔU = Q - W'},
+  {cat:'Relativity', name:'Mass–Energy Equivalence', f:'E = mc²'},
+  {cat:'Relativity', name:'Einstein Field Equations', f:'G_μν + Λg_μν = (8πG/c⁴) T_μν'},
+  {cat:'Relativity', name:'Time Dilation', f:"Δt' = Δt/√(1-v²/c²)"},
+  {cat:'Waves & Optics', name:'Wave Equation', f:'∂²u/∂t² = c²∇²u'},
+  {cat:'Waves & Optics', name:"Snell's Law", f:'n₁sinθ₁ = n₂sinθ₂'},
+  {cat:'Waves & Optics', name:'Wave Speed', f:'v = fλ'},
+  {cat:'Math', name:'Quadratic Formula', f:'x = (-b ± √(b²-4ac)) / 2a'},
+  {cat:'Math', name:"Euler's Identity", f:'e^(iπ) + 1 = 0'},
+  {cat:'Math', name:'Pythagorean Theorem', f:'a² + b² = c²'}
+];
+
+const CONSTANTS = [
+  ['Speed of light','c','2.998 × 10⁸ m/s'],
+  ['Gravitational constant','G','6.674 × 10⁻¹¹ N·m²/kg²'],
+  ['Planck constant','h','6.626 × 10⁻³⁴ J·s'],
+  ['Reduced Planck constant','ħ','1.055 × 10⁻³⁴ J·s'],
+  ['Boltzmann constant','k','1.381 × 10⁻²³ J/K'],
+  ['Elementary charge','e','1.602 × 10⁻¹⁹ C'],
+  ['Electron mass','mₑ','9.109 × 10⁻³¹ kg'],
+  ['Proton mass','m_p','1.673 × 10⁻²⁷ kg'],
+  ['Avogadro constant','Nₐ','6.022 × 10²³ /mol'],
+  ['Gas constant','R','8.314 J/(mol·K)'],
+  ['Vacuum permittivity','ε₀','8.854 × 10⁻¹² F/m'],
+  ['Vacuum permeability','μ₀','1.257 × 10⁻⁶ N/A²']
+];
+
+const UNIT_GROUPS = {
+  Length: { m:1, km:1000, cm:0.01, mm:0.001, mile:1609.34, ft:0.3048, in:0.0254 },
+  Mass: { kg:1, g:0.001, lb:0.453592, oz:0.0283495, ton:1000 },
+  Time: { s:1, min:60, hour:3600, day:86400 },
+  Energy: { J:1, kJ:1000, cal:4.184, kcal:4184, eV:1.602176634e-19, kWh:3.6e6 }
+};
+
+const FakeDash = {
+  mount(){
+    const root = document.getElementById('fakeDash');
+    root.classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+    this.tab = this.tab || 'equations';
+    this.render();
+  },
+  unmount(){ document.getElementById('fakeDash').classList.add('hidden'); },
+  render(){
+    const root = document.getElementById('fakeDash');
+    const tabs = [['equations','Equations'],['flashcards','Flashcards'],['calc','Calculator'],['matrix','Matrix &amp; Algebra'],['graph','Graph Plotter'],['sim','Projectile Sim'],['constants','Constants'],['units','Unit Converter'],['stars','Star Map'],['notes','Notes'],['assignments','Assignments'],['papers','Research Papers']];
+    root.innerHTML = `
+      <div class="fd-head">
+        <h2>Physica — Physics &amp; Mathematics Study Portal</h2>
+        <button class="fd-tab" id="fdSignOut" style="margin-left:auto;">Sign Out</button>
+      </div>
+      <div class="fd-tabs">${tabs.map(([k,l])=>`<div class="fd-tab ${this.tab===k?'active':''}" data-tab="${k}">${l}</div>`).join('')}</div>
+      <div class="fd-body" id="fdBody"></div>
+    `;
+    root.querySelectorAll('.fd-tab[data-tab]').forEach(el=>{
+      el.onclick = ()=>{ this.tab = el.dataset.tab; this.render(); };
+    });
+    const signOut = document.getElementById('fdSignOut');
+    if(signOut) signOut.onclick = ()=>{
+      // Privacy off-focus lock shows an unlock overlay instead — don't offer a bypass there.
+      if(document.getElementById('privacyUnlock')) return;
+      Store.clearSession();
+      location.reload();
+    };
+    const body = document.getElementById('fdBody');
+    const renderers = {
+      equations:'renderEquations', flashcards:'renderFlashcards', calc:'renderCalc', matrix:'renderMatrix',
+      graph:'renderGraph', sim:'renderSim', constants:'renderConstants', units:'renderUnits',
+      stars:'renderStars', notes:'renderNotes', assignments:'renderAssignments', papers:'renderPapers'
+    };
+    this[renderers[this.tab]](body);
+  },
+  renderEquations(body){
+    const cats = ['All', ...new Set(FORMULAS.map(f=>f.cat))];
+    this._eqCat = this._eqCat || 'All';
+    body.innerHTML = `
+      <div class="fd-tabs" style="padding:0 0 14px;">${cats.map(c=>`<div class="fd-tab ${this._eqCat===c?'active':''}" data-cat="${c}" style="font-size:12px;padding:6px 12px;">${c}</div>`).join('')}</div>
+      <div id="eqList"></div>
+    `;
+    body.querySelectorAll('[data-cat]').forEach(el=>{
+      el.onclick = ()=>{ this._eqCat = el.dataset.cat; this.renderEquations(body); };
+    });
+    const list = document.getElementById('eqList');
+    const items = this._eqCat==='All' ? FORMULAS : FORMULAS.filter(f=>f.cat===this._eqCat);
+    list.innerHTML = items.map(f=>`
+      <div class="glass fd-card"><h3>${f.name} <span style="float:right;font-size:11px;color:var(--text-dim);font-weight:400;">${f.cat}</span></h3><div class="formula">${f.f}</div></div>
+    `).join('');
+  },
+  renderFlashcards(body){
+    this._fcIdx = this._fcIdx==null ? 0 : this._fcIdx;
+    this._fcShow = this._fcShow || false;
+    this._fcDeck = this._fcDeck || FORMULAS.map((_,i)=>i);
+    const card = FORMULAS[this._fcDeck[this._fcIdx]];
+    body.innerHTML = `<div class="glass fd-card" style="text-align:center;padding:40px 20px;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">${card.cat} · Card ${this._fcIdx+1} of ${this._fcDeck.length}</div>
+        <h3 style="font-size:16px;margin-bottom:14px;">${card.name}</h3>
+        ${this._fcShow ? `<div class="formula" style="font-size:18px;">${card.f}</div>` : `<button type="button" id="fcReveal">Reveal Formula</button>`}
+      </div>
+      <div class="row" style="max-width:320px;margin:14px auto 0;">
+        <button type="button" class="ghost" id="fcPrev">◀ Prev</button>
+        <button type="button" class="ghost" id="fcShuffle">Shuffle</button>
+        <button type="button" class="ghost" id="fcNext">Next ▶</button>
+      </div>`;
+    const goto = (i)=>{ this._fcIdx=(i+this._fcDeck.length)%this._fcDeck.length; this._fcShow=false; this.renderFlashcards(body); };
+    if(document.getElementById('fcReveal')) document.getElementById('fcReveal').onclick = ()=>{ this._fcShow=true; this.renderFlashcards(body); };
+    document.getElementById('fcPrev').onclick = ()=>goto(this._fcIdx-1);
+    document.getElementById('fcNext').onclick = ()=>goto(this._fcIdx+1);
+    document.getElementById('fcShuffle').onclick = ()=>{ this._fcDeck = this._fcDeck.map(v=>v).sort(()=>Math.random()-0.5); goto(0); };
+  },
+  renderCalc(body){
+    body.innerHTML = `<div class="glass fd-card calc">
+      <h3>Scientific Calculator</h3>
+      <input class="calc-disp" id="calcDisp" readonly value="0">
+      <div class="calc-grid" id="calcGrid"></div>
+    </div>`;
+    let expr = '';
+    let memory = 0;
+    const disp = document.getElementById('calcDisp');
+    const keys = ['sin(','cos(','tan(','sqrt(','MC','MR','M+','7','8','9','/','4','5','6','*','1','2','3','-','0','.','(',')','^','%','pi','+','C','='];
+    const grid = document.getElementById('calcGrid');
+    grid.innerHTML = keys.map(k=>`<button type="button" data-k="${k}">${k}</button>`).join('');
+    grid.querySelectorAll('button').forEach(b=>{
+      b.onclick = ()=>{
+        const k = b.dataset.k;
+        if(k==='C'){ expr=''; disp.value='0'; return; }
+        if(k==='MC'){ memory=0; return; }
+        if(k==='MR'){ expr += String(memory); disp.value = expr; return; }
+        if(k==='M+'){
+          try{ memory += SafeMath.eval(expr || disp.value); }catch(e){}
+          return;
+        }
+        if(k==='='){
+          try{ const r = SafeMath.eval(expr); disp.value = String(r); expr = String(r); }
+          catch(e){ disp.value = 'Error'; expr=''; }
+          return;
+        }
+        expr += k; disp.value = expr;
+      };
+    });
+  },
+  renderMatrix(body){
+    body.innerHTML = `<div class="glass fd-card">
+      <h3>2×2 Matrix Calculator</h3>
+      <div class="row"><input id="a" placeholder="a"><input id="b" placeholder="b"></div>
+      <div class="row" style="margin-top:6px;"><input id="c" placeholder="c"><input id="d" placeholder="d"></div>
+      <div style="margin-top:10px;" class="row">
+        <button type="button" id="det">Determinant</button>
+        <button type="button" id="inv">Inverse</button>
+      </div>
+      <div class="err" id="mres" style="color:var(--accent2);margin-top:10px;"></div>
+    </div>
+    <div class="glass fd-card">
+      <h3>Quadratic Equation Solver</h3>
+      <div class="sub" style="margin-bottom:10px;">ax² + bx + c = 0</div>
+      <div class="row"><input id="qa" placeholder="a"><input id="qb" placeholder="b"><input id="qc" placeholder="c"></div>
+      <button type="button" id="qsolve" style="margin-top:10px;">Solve</button>
+      <div class="err" id="qres" style="color:var(--accent2);margin-top:10px;"></div>
+    </div>`;
+    const g = id=>parseFloat(document.getElementById(id).value)||0;
+    document.getElementById('det').onclick = ()=>{
+      document.getElementById('mres').textContent = 'det = ' + (g('a')*g('d') - g('b')*g('c'));
+    };
+    document.getElementById('inv').onclick = ()=>{
+      const det = g('a')*g('d') - g('b')*g('c');
+      if(det===0){ document.getElementById('mres').textContent = 'Singular matrix — no inverse.'; return; }
+      const a=g('a'),b=g('b'),c=g('c'),d=g('d');
+      document.getElementById('mres').textContent = `[[${(d/det).toFixed(3)}, ${(-b/det).toFixed(3)}], [${(-c/det).toFixed(3)}, ${(a/det).toFixed(3)}]]`;
+    };
+    document.getElementById('qsolve').onclick = ()=>{
+      const a=g('qa'), b=g('qb'), c=g('qc');
+      const out = document.getElementById('qres');
+      if(a===0){ out.textContent = 'Not a quadratic (a must be non-zero).'; return; }
+      const disc = b*b - 4*a*c;
+      if(disc < 0){
+        const re = (-b/(2*a)).toFixed(4), im = (Math.sqrt(-disc)/(2*a)).toFixed(4);
+        out.textContent = `x = ${re} ± ${im}i (complex roots)`;
+      } else {
+        const x1 = (-b + Math.sqrt(disc))/(2*a), x2 = (-b - Math.sqrt(disc))/(2*a);
+        out.textContent = disc===0 ? `x = ${x1.toFixed(4)} (double root)` : `x₁ = ${x1.toFixed(4)}, x₂ = ${x2.toFixed(4)}`;
+      }
+    };
+  },
+  renderGraph(body){
+    body.innerHTML = `<div class="glass fd-card">
+      <h3>Graph Plotter</h3>
+      <div class="field"><label>f₁(x) =</label><input id="fx1" value="sin(x)*x"></div>
+      <div class="field"><label>f₂(x) = <span style="color:var(--text-dim);font-size:11px;">(optional)</span></label><input id="fx2" value=""></div>
+      <div class="field"><label>f₃(x) = <span style="color:var(--text-dim);font-size:11px;">(optional)</span></label><input id="fx3" value=""></div>
+      <button type="button" id="plot">Plot</button>
+      <canvas id="cv" width="600" height="320" style="margin-top:10px;max-width:100%;background:rgba(0,0,0,0.25);border-radius:10px;"></canvas>
+      <div class="err" id="gerr"></div>
+    </div>`;
+    const draw = ()=>{
+      const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+      ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.beginPath();
+      ctx.moveTo(0,cv.height/2); ctx.lineTo(cv.width,cv.height/2);
+      ctx.moveTo(cv.width/2,0); ctx.lineTo(cv.width/2,cv.height); ctx.stroke();
+      const scaleX = 30, scaleY = 30;
+      const colors = ['#8a5cff','#5cd6ff','#ff5cae'];
+      const exprs = [document.getElementById('fx1').value, document.getElementById('fx2').value, document.getElementById('fx3').value].filter(Boolean);
+      let anyErr = '';
+      exprs.forEach((expr, idx)=>{
+        ctx.strokeStyle = colors[idx%colors.length]; ctx.lineWidth=2; ctx.beginPath();
+        let started = false;
+        try{
+          for(let px=0; px<=cv.width; px++){
+            const x = (px - cv.width/2)/scaleX;
+            const y = SafeMath.eval(expr, {x});
+            const py = cv.height/2 - y*scaleY;
+            if(!isFinite(py)){ started=false; continue; }
+            if(!started){ ctx.moveTo(px,py); started=true; } else ctx.lineTo(px,py);
+          }
+          ctx.stroke();
+        }catch(e){ anyErr = `Invalid expression in f${idx+1}(x).`; }
+      });
+      document.getElementById('gerr').textContent = anyErr;
+    };
+    document.getElementById('plot').onclick = draw;
+    draw();
+  },
+  renderSim(body){
+    body.innerHTML = `<div class="glass fd-card">
+      <h3>Projectile Motion Simulator</h3>
+      <div class="row">
+        <div class="field"><label>Initial speed (m/s)</label><input id="simV" value="25"></div>
+        <div class="field"><label>Launch angle (°)</label><input id="simA" value="45"></div>
+      </div>
+      <button type="button" id="simGo">Launch</button>
+      <canvas id="simCv" width="600" height="300" style="margin-top:10px;max-width:100%;background:rgba(0,0,0,0.25);border-radius:10px;"></canvas>
+      <div id="simRes" style="font-size:12px;color:var(--text-dim);margin-top:8px;"></div>
+    </div>`;
+    const cv = document.getElementById('simCv'), ctx = cv.getContext('2d');
+    const drawStatic = ()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.beginPath();
+      ctx.moveTo(0,cv.height-20); ctx.lineTo(cv.width,cv.height-20); ctx.stroke();
+    };
+    drawStatic();
+    document.getElementById('simGo').onclick = ()=>{
+      const v0 = parseFloat(document.getElementById('simV').value)||0;
+      const angle = (parseFloat(document.getElementById('simA').value)||0) * Math.PI/180;
+      const g = 9.8;
+      const vx = v0*Math.cos(angle), vy0 = v0*Math.sin(angle);
+      const tFlight = 2*vy0/g;
+      const range = vx*tFlight;
+      const maxH = (vy0*vy0)/(2*g);
+      document.getElementById('simRes').textContent = `Range: ${range.toFixed(1)} m · Max height: ${maxH.toFixed(1)} m · Time of flight: ${tFlight.toFixed(2)} s`;
+      const scale = Math.max(range, maxH*2, 1) > 0 ? (cv.width-40) / Math.max(range, 1) : 1;
+      let t = 0;
+      const dt = 0.03;
+      const anim = ()=>{
+        drawStatic();
+        ctx.strokeStyle = '#8a5cff'; ctx.lineWidth = 2; ctx.beginPath();
+        let started = false;
+        for(let tt=0; tt<=t; tt+=dt){
+          const x = vx*tt, y = vy0*tt - 0.5*g*tt*tt;
+          if(y<0) break;
+          const px = 20 + x*scale, py = cv.height-20 - y*scale;
+          if(!started){ ctx.moveTo(px,py); started=true; } else ctx.lineTo(px,py);
+        }
+        ctx.stroke();
+        const x = vx*t, y = vy0*t - 0.5*g*t*t;
+        if(y>=0){
+          const px = 20 + x*scale, py = cv.height-20 - y*scale;
+          ctx.fillStyle = '#5cd6ff'; ctx.beginPath(); ctx.arc(px,py,5,0,7); ctx.fill();
+          t += dt;
+          requestAnimationFrame(anim);
+        }
+      };
+      anim();
+    };
+  },
+  renderConstants(body){
+    body.innerHTML = `<div class="glass fd-card">
+      <h3>Physical Constants</h3>
+      ${CONSTANTS.map(([name,sym,val])=>`
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--glass-border);font-size:13px;">
+          <span>${name} <span style="color:var(--text-dim);">(${sym})</span></span><span>${val}</span>
+        </div>`).join('')}
+    </div>`;
+  },
+  renderUnits(body){
+    const groups = Object.keys(UNIT_GROUPS);
+    this._unitGroup = this._unitGroup || groups[0];
+    body.innerHTML = `<div class="glass fd-card">
+      <h3>Unit Converter</h3>
+      <div class="field"><label>Category</label>
+        <select id="ugSel">${groups.map(g=>`<option value="${g}" ${this._unitGroup===g?'selected':''}>${g}</option>`).join('')}</select>
+      </div>
+      <div class="row">
+        <div class="field"><label>From</label><select id="fromU"></select></div>
+        <div class="field"><label>To</label><select id="toU"></select></div>
+      </div>
+      <div class="field"><label>Value</label><input id="uVal" value="1"></div>
+      <div id="uRes" style="font-size:15px;color:var(--accent2);"></div>
+    </div>`;
+    const fromSel = document.getElementById('fromU'), toSel = document.getElementById('toU');
+    const populate = ()=>{
+      const units = Object.keys(UNIT_GROUPS[this._unitGroup]);
+      fromSel.innerHTML = units.map(u=>`<option value="${u}">${u}</option>`).join('');
+      toSel.innerHTML = units.map((u,i)=>`<option value="${u}" ${i===1?'selected':''}>${u}</option>`).join('');
+      compute();
+    };
+    const compute = ()=>{
+      const table = UNIT_GROUPS[this._unitGroup];
+      const val = parseFloat(document.getElementById('uVal').value)||0;
+      const res = val * table[fromSel.value] / table[toSel.value];
+      document.getElementById('uRes').textContent = `${val} ${fromSel.value} = ${res.toPrecision(6)} ${toSel.value}`;
+    };
+    document.getElementById('ugSel').onchange = (e)=>{ this._unitGroup = e.target.value; populate(); };
+    document.getElementById('uVal').oninput = compute;
+    populate();
+    fromSel.onchange = compute; toSel.onchange = compute;
+  },
+  renderStars(body){
+    body.innerHTML = `<div class="glass fd-card">
+      <h3>Interactive Star Map</h3>
+      <canvas id="starcv" width="600" height="320" style="max-width:100%;background:#05040d;border-radius:10px;"></canvas>
+      <div style="color:var(--text-dim);font-size:12px;margin-top:8px;">Click to reveal coordinates of nearby objects (simulated).</div>
+    </div>`;
+    const cv = document.getElementById('starcv'), ctx = cv.getContext('2d');
+    const pts = [];
+    for(let i=0;i<200;i++) pts.push({x:Math.random()*cv.width, y:Math.random()*cv.height, r:Math.random()*1.6+0.4});
+    ctx.fillStyle='#fff';
+    pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); });
+    cv.onclick = (e)=>{
+      const rect = cv.getBoundingClientRect();
+      const x = ((e.clientX-rect.left)/rect.width*cv.width).toFixed(0);
+      const y = ((e.clientY-rect.top)/rect.height*cv.height).toFixed(0);
+      ctx.fillStyle='#5cd6ff'; ctx.font='11px sans-serif';
+      ctx.fillText(`RA ${x}° / DEC ${y}°`, (e.clientX-rect.left)+6, (e.clientY-rect.top));
+    };
+  },
+  notesKey(){ return 'vsc_fake_notes_v2'; },
+  loadNotes(){
+    try{ const raw = JSON.parse(localStorage.getItem(this.notesKey())||'[]'); if(Array.isArray(raw) && raw.length) return raw; }catch(e){}
+    return [{ id:'n1', title:'Untitled Note', body:'' }];
+  },
+  saveNotes(notes){ localStorage.setItem(this.notesKey(), JSON.stringify(notes)); },
+  renderNotes(body){
+    const notes = this.loadNotes();
+    this._noteId = this._noteId && notes.some(n=>n.id===this._noteId) ? this._noteId : notes[0].id;
+    const active = notes.find(n=>n.id===this._noteId);
+    body.innerHTML = `<div style="display:flex;gap:14px;">
+      <div class="glass fd-card" style="width:200px;flex-shrink:0;">
+        <button type="button" id="noteAdd" style="width:100%;margin-bottom:10px;">+ New Note</button>
+        <div id="noteList"></div>
+      </div>
+      <div class="glass fd-card" style="flex:1;">
+        <input id="noteTitle" value="${escapeHtml(active.title)}" style="width:100%;font-size:15px;font-weight:600;margin-bottom:10px;background:transparent;border:none;border-bottom:1px solid var(--glass-border);border-radius:0;padding:4px 0;">
+        <textarea id="noteBody" rows="14" style="width:100%;">${escapeHtml(active.body)}</textarea>
+        <button type="button" class="ghost danger" id="noteDel" style="margin-top:10px;">Delete Note</button>
+      </div>
+    </div>`;
+    document.getElementById('noteList').innerHTML = notes.map(n=>`<div class="conv-item ${n.id===this._noteId?'active':''}" data-id="${n.id}" style="padding:8px;">${escapeHtml(n.title||'Untitled')}</div>`).join('');
+    document.getElementById('noteList').querySelectorAll('[data-id]').forEach(el=>{
+      el.onclick = ()=>{ this._noteId = el.dataset.id; this.renderNotes(body); };
+    });
+    document.getElementById('noteAdd').onclick = ()=>{
+      const n = { id:'n'+Date.now(), title:'Untitled Note', body:'' };
+      notes.push(n); this.saveNotes(notes); this._noteId = n.id; this.renderNotes(body);
+    };
+    document.getElementById('noteDel').onclick = ()=>{
+      const idx = notes.findIndex(n=>n.id===this._noteId);
+      if(notes.length<=1){ notes[0] = { id:'n1', title:'Untitled Note', body:'' }; }
+      else notes.splice(idx,1);
+      this.saveNotes(notes); this._noteId = notes[0].id; this.renderNotes(body);
+    };
+    document.getElementById('noteTitle').oninput = (e)=>{ active.title = e.target.value; this.saveNotes(notes); };
+    document.getElementById('noteBody').oninput = (e)=>{ active.body = e.target.value; this.saveNotes(notes); };
+  },
+  renderAssignments(body){
+    const items = ['Problem Set 4 — Lagrangian Mechanics (due Fri)','Lab Report — Diffraction Patterns','Problem Set 5 — Tensor Calculus Basics','Reading — Ch.12 Quantum Harmonic Oscillator','Worksheet — Unit Conversions','Review — Thermodynamics Cycles'];
+    const key = 'vsc_assignments_done';
+    const done = JSON.parse(localStorage.getItem(key) || '{}');
+    body.innerHTML = `<div class="glass fd-card"><h3>Assignments</h3>${items.map((i,idx)=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--glass-border);font-size:13px;">
+        <input type="checkbox" data-idx="${idx}" ${done[idx]?'checked':''} style="width:auto;">
+        <span style="${done[idx]?'text-decoration:line-through;color:var(--text-dim);':''}">${i}</span>
+      </div>`).join('')}</div>`;
+    body.querySelectorAll('[data-idx]').forEach(cb=>{
+      cb.onchange = ()=>{ done[cb.dataset.idx] = cb.checked; localStorage.setItem(key, JSON.stringify(done)); this.renderAssignments(body); };
+    });
+  },
+  renderPapers(body){
+    const items = ['On the Electrodynamics of Moving Bodies — A. Einstein (1905)','Quantized Radiation — M. Planck (1901)','A Mathematical Theory of Communication — C. Shannon (1948)','The Theory of Sound — Lord Rayleigh (1877)','On Computable Numbers — A. Turing (1936)'];
+    const key = 'vsc_papers_read';
+    const read = JSON.parse(localStorage.getItem(key) || '{}');
+    body.innerHTML = `<div class="glass fd-card"><h3>Research Papers</h3>${items.map((i,idx)=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--glass-border);font-size:13px;">
+        <button type="button" class="ghost" data-idx="${idx}" style="padding:4px 10px;font-size:11px;">${read[idx]?'Read ✓':'Mark read'}</button>
+        <span>${i}</span>
+      </div>`).join('')}</div>`;
+    body.querySelectorAll('[data-idx]').forEach(btn=>{
+      btn.onclick = ()=>{ read[btn.dataset.idx] = !read[btn.dataset.idx]; localStorage.setItem(key, JSON.stringify(read)); this.renderPapers(body); };
+    });
+  }
+};
+
+const PrivacyGuard = {
+  locked: false,
+  autoLockTimer: null,
+  init(settings){
+    this.settings = settings;
+    document.removeEventListener('visibilitychange', this._visHandler);
+    window.removeEventListener('blur', this._blurHandler);
+    document.removeEventListener('keydown', this._keyHandler);
+    this._visHandler = ()=>{ if(document.hidden) this.tryLock(); };
+    this._blurHandler = ()=>{ this.tryLock(); };
+    this._keyHandler = (e)=>{
+      const combo = this.settings.panicHotkey;
+      if(combo && this.matchHotkey(e, combo)) this.tryLock();
+      this.bumpActivity();
+    };
+    document.addEventListener('visibilitychange', this._visHandler);
+    window.addEventListener('blur', this._blurHandler);
+    document.addEventListener('keydown', this._keyHandler);
+    ['mousemove','mousedown','scroll'].forEach(ev=>document.addEventListener(ev, ()=>this.bumpActivity()));
+    this.bumpActivity();
+  },
+  matchHotkey(e, combo){
+    const parts = combo.split('+').map(s=>s.trim().toLowerCase());
+    const need = { ctrl:parts.includes('ctrl'), shift:parts.includes('shift'), alt:parts.includes('alt') };
+    const key = parts.find(p=>!['ctrl','shift','alt'].includes(p));
+    return e.ctrlKey===need.ctrl && e.shiftKey===need.shift && e.altKey===need.alt && key && e.key.toLowerCase()===key;
+  },
+  bumpActivity(){
+    if(!this.settings || !this.settings.autoLockMin) return;
+    clearTimeout(this.autoLockTimer);
+    this.autoLockTimer = setTimeout(()=>this.tryLock(), this.settings.autoLockMin*60000);
+  },
+  tryLock(){
+    if(!this.settings || !this.settings.privacyMode || VSC.isFakeSession) return;
+    if(document.getElementById('app').classList.contains('hidden')) return;
+    this.locked = true;
+    FakeDash.mount();
+    this.showUnlockOverlay();
+  },
+  showUnlockOverlay(){
+    let ov = document.getElementById('privacyUnlock');
+    if(ov) ov.remove();
+    ov = document.createElement('div');
+    ov.id = 'privacyUnlock';
+    ov.className = 'center-screen';
+    ov.style.zIndex = 40;
+    ov.innerHTML = `<div class="glass panel">
+      <h1>Locked</h1>
+      <div class="sub">Privacy Mode engaged — re-authenticate to return</div>
+      <div class="field"><label>Master Password</label><input type="password" id="ulp"></div>
+      <div class="err" id="ule"></div>
+      <button id="ulBtn" style="width:100%;">Unlock</button>
+    </div>`;
+    document.body.appendChild(ov);
+    document.getElementById('ulBtn').onclick = async ()=>{
+      const ok = await Crypto.verify(document.getElementById('ulp').value, VSC.currentUser.master.salt, VSC.currentUser.master.hash);
+      if(!ok){ document.getElementById('ule').textContent='Incorrect password.'; return; }
+      ov.remove();
+      this.locked = false;
+      FakeDash.unmount();
+      document.getElementById('app').classList.remove('hidden');
+      this.bumpActivity();
+    };
+  }
+};
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function renderMarkdown(text){
+  let t = escapeHtml(text);
+  t = t.replace(/```([\s\S]*?)```/g, (m,code)=>`<pre>${highlightCode(code.trim())}</pre>`);
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+  t = t.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  t = t.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>');
+  t = t.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:var(--accent2);">$1</a>');
+  return t.replace(/\n/g,'<br>');
+}
+function highlightCode(code){
+  return escapeHtml(code)
+    .replace(/\b(function|const|let|var|if|else|return|for|while|class|import|export|new|await|async)\b/g,'<span class="tok-kw">$1</span>')
+    .replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,'<span class="tok-str">$1</span>')
+    .replace(/(\/\/.*$)/gm,'<span class="tok-com">$1</span>')
+    .replace(/\b(\d+)\b/g,'<span class="tok-num">$1</span>');
+}
+function detectLink(text){
+  const m = text.match(/https?:\/\/([^\s\/]+)([^\s]*)/);
+  if(!m) return null;
+  return { url:m[0], domain:m[1], title:m[1].replace(/^www\./,''), desc:'Shared link · '+m[0].slice(0,50) };
+}
+const SWEAR_DEFAULT = ['damn','hell','crap'];
+
+const CloudChat = {
+  unsubConvList: null,
+  unsubMsgs: null,
+  convId(a,b){ return [a.toLowerCase(), b.toLowerCase()].sort().join('__'); },
+  async lookupUser(username){
+    if(!window.__VSC_CFG_OK) return null;
+    const snap = await FBX.getDoc(FBX.doc(FBX.db, 'vsc_users', username.toLowerCase()));
+    return snap.exists() ? snap.data() : null;
+  },
+  listenConversations(myUsername, onChange){
+    if(this.unsubConvList) this.unsubConvList();
+    const q = FBX.query(FBX.collection(FBX.db, 'vsc_conversations'), FBX.where('participants', 'array-contains', myUsername));
+    this.unsubConvList = FBX.onSnapshot(q, snap=>{
+      const list = [];
+      snap.forEach(d=>list.push({ id:d.id, ...d.data() }));
+      onChange(list);
+    }, err=>console.error('conv listen error', err));
+  },
+  async ensureConversation(me, otherUsername){
+    const other = await this.lookupUser(otherUsername);
+    if(!other) return null;
+    const id = this.convId(me, otherUsername);
+    const ref = FBX.doc(FBX.db, 'vsc_conversations', id);
+    const snap = await FBX.getDoc(ref);
+    if(!snap.exists()){
+      await FBX.setDoc(ref, {
+        participants: [me, other.username],
+        createdAt: Date.now(), lastMessageAt: Date.now(), typing: {}
+      });
+    }
+    return { id, other };
+  },
+  listenMessages(convId, onChange){
+    if(this.unsubMsgs) this.unsubMsgs();
+    const q = FBX.query(FBX.collection(FBX.db, 'vsc_conversations', convId, 'messages'), FBX.orderBy('ts', 'asc'));
+    this.unsubMsgs = FBX.onSnapshot(q, snap=>{
+      const msgs = [];
+      snap.forEach(d=>msgs.push({ id:d.id, ...d.data() }));
+      onChange(msgs);
+    }, err=>console.error('msg listen error', err));
+  },
+  stopMessages(){ if(this.unsubMsgs){ this.unsubMsgs(); this.unsubMsgs = null; } },
+  async sendMessage(convId, msg){
+    await FBX.addDoc(FBX.collection(FBX.db, 'vsc_conversations', convId, 'messages'), msg);
+    await FBX.updateDoc(FBX.doc(FBX.db, 'vsc_conversations', convId), { lastMessageAt: Date.now() });
+  },
+  async updateMessage(convId, msgId, patch){
+    await FBX.updateDoc(FBX.doc(FBX.db, 'vsc_conversations', convId, 'messages', msgId), patch);
+  },
+  async setTyping(convId, username, on){
+    await FBX.updateDoc(FBX.doc(FBX.db, 'vsc_conversations', convId), { ['typing.'+username]: on ? Date.now() : 0 });
+  },
+  async touchPresence(username){
+    if(!window.__VSC_CFG_OK) return;
+    await FBX.updateDoc(FBX.doc(FBX.db, 'vsc_users', username.toLowerCase()), { lastActive: Date.now() }).catch(()=>{});
+  }
+};
+
+const EMOJI_SET = ['👍','❤️','😂','🔥','🎉','😮','😢','😡','👏','🙏','💯','🚀','✨','😎','🤔','👀','💀','🥳','😅','🙌','⭐','🫡','🤝','👌','😍','🤯','🥹','😴','🍕','☕'];
+const SLASH_COMMANDS = {
+  '/shrug': '¯\\_(ツ)_/¯',
+  '/tableflip': '(╯°□°)╯︵ ┻━┻',
+  '/unflip': '┬─┬ ノ( ゜-゜ノ)',
+  '/lenny': '( ͡° ͜ʖ ͡°)'
+};
+function applySlashCommand(text){
+  const trimmed = text.trim();
+  if(SLASH_COMMANDS[trimmed]) return SLASH_COMMANDS[trimmed];
+  if(trimmed.toLowerCase().startsWith('/me ')) return '*'+trimmed.slice(4)+'*';
+  return text;
+}
+const EmojiPicker = {
+  // Floating emoji panel near an anchor element; resolves to the chosen emoji or null.
+  pick(anchor){
+    return new Promise(resolve=>{
+      this.close();
+      const panel = document.createElement('div');
+      panel.id = 'emojiPanel';
+      panel.className = 'glass';
+      panel.style.cssText = 'position:fixed;z-index:60;padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;max-width:240px;';
+      panel.innerHTML = EMOJI_SET.map(e=>`<button type="button" style="background:transparent;font-size:20px;padding:4px;border-radius:8px;">${e}</button>`).join('');
+      document.body.appendChild(panel);
+      const r = anchor.getBoundingClientRect();
+      const top = Math.min(r.bottom + 6, window.innerHeight - 220);
+      const left = Math.min(r.left, window.innerWidth - 250);
+      panel.style.top = Math.max(10, top) + 'px';
+      panel.style.left = Math.max(10, left) + 'px';
+      const done = (val)=>{ this.close(); document.removeEventListener('mousedown', onOutside, true); resolve(val); };
+      panel.querySelectorAll('button').forEach(b=>b.onclick = ()=>done(b.textContent));
+      const onOutside = (e)=>{ if(!panel.contains(e.target) && e.target!==anchor) done(null); };
+      setTimeout(()=>document.addEventListener('mousedown', onOutside, true), 0);
+    });
+  },
+  close(){ const p = document.getElementById('emojiPanel'); if(p) p.remove(); }
+};
+
+const ChatApp = {
+  seedConversations(){
+    return {
+      activeId: 'saved',
+      conversations: [
+        { id:'saved', name:'Saved Messages', emoji:'📌', status:'online', isSelf:true, isCloud:false, messages:[], draft:'', pinned:[], typing:false }
+      ]
+    };
+  },
+  mount(user){
+    this.user = user;
+    this.chats = Store.getChats(user.username);
+    this.chats.conversations = this.chats.conversations.filter(c=>c.id==='saved');
+    this.settings = VSC.currentSettings;
+    const root = document.getElementById('app');
+    root.classList.remove('hidden');
+    root.innerHTML = `
+      <div id="sidebar" class="glass">
+        <div class="sb-head">
+          <div class="avatar">${user.codename[0].toUpperCase()}</div>
+          <div style="flex:1;">
+            <div class="name">${user.codename}</div>
+            <div class="status"><span class="dot online"></span>Online</div>
+          </div>
+          <button class="ghost" id="btnNewChat" title="New chat">＋</button>
+          <button class="ghost" id="btnSettings" title="Settings">⚙</button>
+          <button class="ghost" id="btnLock" title="Lock now">🔒</button>
+        </div>
+        <div class="field" style="margin:10px 12px 0;">
+          <input id="searchBox" placeholder="Search messages, files, links...">
+        </div>
+        ${window.__VSC_CFG_OK ? '' : `<div style="margin:0 12px 8px;font-size:11px;color:var(--text-dim);">Cloud not configured — only Saved Messages works. Add a Firebase config to firebaseConfig to chat with real accounts.</div>`}
+        <div id="convList"></div>
+      </div>
+      <div id="chatArea" class="glass">
+        <div id="chatHead"></div>
+        <div id="msgs"></div>
+        <div id="typingIndArea"></div>
+        <div id="replyBar" class="hidden glass"></div>
+        <div id="composer"></div>
+      </div>
+    `;
+    document.getElementById('btnSettings').onclick = ()=>SettingsUI.open();
+    document.getElementById('btnLock').onclick = ()=>PrivacyGuard.tryLock();
+    document.getElementById('btnNewChat').onclick = ()=>this.startNewChat();
+    document.getElementById('searchBox').oninput = (e)=>this.renderConvList(e.target.value.trim().toLowerCase());
+    this.renderConvList();
+    this.selectConv(this.chats.activeId || 'saved');
+    if(window.__VSC_CFG_OK && user.deviceUid){
+      CloudChat.listenConversations(user.username, (list)=>this.onCloudConvList(list));
+      CloudChat.touchPresence(user.username);
+      clearInterval(this._presenceTimer);
+      this._presenceTimer = setInterval(()=>CloudChat.touchPresence(user.username), 20000);
+    }
+  },
+  async startNewChat(){
+    if(!window.__VSC_CFG_OK){ alert('Cloud is not configured — add your Firebase config to start real chats.'); return; }
+    if(!this.user.deviceUid){ alert('This account was created before cloud sync was enabled, so it has no cloud identity. Create a new account to use real chat.'); return; }
+    const uname = prompt('Start a chat with username:');
+    if(!uname) return;
+    if(uname.trim().toLowerCase() === this.user.username.toLowerCase()){ alert("That's you."); return; }
+    const result = await CloudChat.ensureConversation(this.user.username, uname.trim());
+    if(!result){ alert('No account with that username.'); return; }
+    this.selectConv(result.id);
+  },
+  presenceStatus(lastActive){
+    if(!lastActive) return 'offline';
+    const age = Date.now() - lastActive;
+    if(age < 30000) return 'online';
+    if(age < 5*60000) return 'idle';
+    return 'offline';
+  },
+  onCloudConvList(list){
+    const savedConv = this.chats.conversations.find(c=>c.id==='saved');
+    const existing = {};
+    this.chats.conversations.forEach(c=>{ if(c.isCloud) existing[c.id] = c; });
+    const merged = [savedConv];
+    list.forEach(convDoc=>{
+      const otherUsername = convDoc.participants.find(p=>p.toLowerCase()!==this.user.username.toLowerCase()) || convDoc.participants[0];
+      let conv = existing[convDoc.id];
+      if(!conv){
+        conv = { id: convDoc.id, name: otherUsername, emoji:'👤', status:'offline', isCloud:true, otherUsername, messages:[], draft:'', pinned:[] };
+      }
+      conv.typingMap = convDoc.typing||{};
+      conv.lastMessageAt = convDoc.lastMessageAt||0;
+      merged.push(conv);
+    });
+    merged.sort((a,b)=>{ if(a.id==='saved') return -1; if(b.id==='saved') return 1; return (b.lastMessageAt||0)-(a.lastMessageAt||0); });
+    this.chats.conversations = merged;
+    if(!this.getConv(this.chats.activeId)) this.chats.activeId = 'saved';
+    this.renderConvList();
+    if(this.chats.activeId!==this.lastRenderedHeadFor) this.renderHead();
+    this.updateTypingIndicator();
+    merged.filter(c=>c.isCloud && !c.name).forEach(async c=>{
+      const prof = await CloudChat.lookupUser(c.otherUsername);
+      if(prof){ c.name = prof.codename || prof.username; c.status = this.presenceStatus(prof.lastActive); this.renderConvList(); if(this.chats.activeId===c.id) this.renderHead(); }
+    });
+  },
+  save(){
+    const savedConv = this.chats.conversations.find(c=>c.id==='saved');
+    Store.saveChats(this.user.username, { activeId: this.chats.activeId, conversations:[savedConv] });
+  },
+  getConv(id){ return this.chats.conversations.find(c=>c.id===id); },
+  renderConvList(filter){
+    const list = document.getElementById('convList');
+    const convs = this.chats.conversations;
+    list.innerHTML = convs.map(c=>{
+      const last = c.messages.filter(m=>!(m.deletedFor||[]).includes('me')).slice(-1)[0];
+      let preview = last ? ((last.deletedFor||[]).includes('everyone') ? 'Message deleted' : (last.attachments&&last.attachments.length ? '📎 Attachment' : last.text)) : 'No messages yet';
+      if(filter && !(c.name.toLowerCase().includes(filter) || c.messages.some(m=>(m.text||'').toLowerCase().includes(filter)))) return '';
+      return `<div class="conv-item ${c.id===this.chats.activeId?'active':''}" data-id="${c.id}">
+        <div class="avatar">${c.id==='saved'?c.emoji:c.name[0].toUpperCase()}</div>
+        <div class="meta">
+          <div class="top"><span>${escapeHtml(c.name)}</span><span style="color:var(--text-dim);font-size:11px;">${last?formatTime(last.ts):''}</span></div>
+          <div class="prev"><span class="dot ${c.status}"></span>${escapeHtml(preview||'')}</div>
+        </div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.conv-item').forEach(el=>el.onclick=()=>this.selectConv(el.dataset.id));
+  },
+  selectConv(id){
+    const c = this.getConv(id);
+    if(!c) return;
+    this.chats.activeId = id; this.save();
+    this.replyTarget = null;
+    CloudChat.stopMessages();
+    if(this._presenceUnsub){ this._presenceUnsub(); this._presenceUnsub = null; }
+    this.renderConvList();
+    this.lastRenderedHeadFor = id;
+    this.renderHead();
+    this.renderMessages();
+    this.renderComposer();
+    this.updateTypingIndicator();
+    if(c.isCloud){
+      CloudChat.listenMessages(c.id, (msgs)=>{
+        c.messages = msgs;
+        if(this.chats.activeId===c.id){ this.renderMessages(); }
+        this.renderConvList();
+        if(this.chats.activeId===c.id){
+          msgs.filter(m=>m.from!==this.user.username && !(m.seenBy||[]).includes(this.user.username))
+            .forEach(m=>CloudChat.updateMessage(c.id, m.id, { seenBy: FBX.arrayUnion(this.user.username) }));
+        }
+      });
+      if(window.__VSC_CFG_OK){
+        this._presenceUnsub = FBX.onSnapshot(FBX.doc(FBX.db,'vsc_users', c.otherUsername.toLowerCase()), snap=>{
+          if(!snap.exists()) return;
+          const prof = snap.data();
+          c.status = this.presenceStatus(prof.lastActive);
+          c.name = prof.codename || prof.username;
+          if(this.chats.activeId===c.id) this.renderHead();
+          this.renderConvList();
+        });
+      }
+    }
+  },
+  updateTypingIndicator(){
+    const c = this.getConv(this.chats.activeId);
+    if(!c || !c.isCloud){ this.showTyping(false); return; }
+    const t = (c.typingMap||{})[c.otherUsername];
+    this.showTyping(!!(t && (Date.now()-t) < 4000), c.name);
+  },
+  renderHead(){
+    const c = this.getConv(this.chats.activeId);
+    const pinnedCount = c.messages.filter(m=>m.pinned).length;
+    document.getElementById('chatHead').innerHTML = `
+      <div class="avatar">${c.id==='saved'?c.emoji:c.name[0].toUpperCase()}</div>
+      <div class="who">
+        <div class="name">${escapeHtml(c.name)}</div>
+        <div class="status" id="statusLine"><span class="dot ${c.status}"></span>${c.status}</div>
+      </div>
+      <div class="actions">
+        <button class="ghost" id="pinnedBtn">📌 ${pinnedCount}</button>
+      </div>
+    `;
+    document.getElementById('pinnedBtn').onclick = ()=>this.showPinned();
+  },
+  showPinned(){
+    const c = this.getConv(this.chats.activeId);
+    const pinned = c.messages.filter(m=>m.pinned);
+    if(!pinned.length){ alert('No pinned messages.'); return; }
+    alert('Pinned:\n' + pinned.map(m=>m.text||'attachment').join('\n---\n'));
+  },
+  renderMessages(){
+    const c = this.getConv(this.chats.activeId);
+    const box = document.getElementById('msgs');
+    let html = '';
+    let lastDate = null;
+    c.messages.forEach(m=>{
+      if((m.deletedFor||[]).includes('me')) return;
+      const d = new Date(m.ts).toDateString();
+      if(d!==lastDate){ html += `<div class="date-sep">${d}</div>`; lastDate = d; }
+      const isEveryoneDeleted = (m.deletedFor||[]).includes('everyone');
+      const isMe = c.isCloud ? m.from===this.user.username : m.from==='me';
+      let body = '';
+      if(isEveryoneDeleted){
+        body = `<div class="bubble deleted">This message was deleted</div>`;
+      } else {
+        let inner = '';
+        if(m.replyTo){
+          const rm = c.messages.find(x=>x.id===m.replyTo);
+          if(rm) inner += `<div class="quote">${escapeHtml((rm.text||'attachment').slice(0,60))}</div>`;
+        }
+        if(m.forwardedFrom) inner += `<div style="font-size:11px;opacity:.6;margin-bottom:3px;">Forwarded from ${escapeHtml(m.forwardedFrom)}</div>`;
+        if(m.text) inner += `<div>${renderMarkdown(m.text)}</div>`;
+        const link = m.text ? detectLink(m.text) : null;
+        if(link) inner += `<div class="link-card"><div class="lc-body"><div class="lc-title">${escapeHtml(link.title)}</div><div class="lc-desc">${escapeHtml(link.desc)}</div></div></div>`;
+        (m.attachments||[]).forEach(a=>{
+          if(a.type.startsWith('image/')) inner += `<img class="att" src="${a.data}">`;
+          else if(a.type.startsWith('video/')) inner += `<video class="att" src="${a.data}" controls></video>`;
+          else inner += `<div class="file-att">📄 <span>${escapeHtml(a.name)}</span><a href="${a.data}" download="${escapeHtml(a.name)}" style="color:var(--accent2);">Download</a></div>`;
+        });
+        const reactEntries = Object.entries(m.reactions||{}).filter(([,v])=>v.length);
+        if(reactEntries.length) inner += `<div class="reactions">${reactEntries.map(([e,v])=>`<span data-e="${e}">${e} ${v.length}</span>`).join('')}</div>`;
+        const seen = c.isCloud ? (m.seenBy||[]).includes(c.otherUsername) : m.seen;
+        inner += `<div class="meta">${m.pinned?'<span class="pin-flag">📌</span>':''}${m.starred?'<span class="star-flag">⭐</span>':''}${m.edited?'edited · ':''}${formatTime(m.ts)}${isMe?` · ${seen?'✓✓ Seen':'✓✓'}`:''}</div>`;
+        body = `<div class="bubble">
+          <div class="msg-actions">
+            <button data-act="react" title="React">🙂</button>
+            <button data-act="reply" title="Reply">↩</button>
+            <button data-act="forward" title="Forward">➦</button>
+            <button data-act="pin" title="Pin">📌</button>
+            <button data-act="star" title="Star">⭐</button>
+            <button data-act="copy" title="Copy">⧉</button>
+            ${isMe?'<button data-act="edit" title="Edit">✎</button>':''}
+            <button data-act="delme" title="Delete for me">🗑</button>
+            ${isMe?'<button data-act="delall" title="Delete for everyone">⛔</button>':''}
+          </div>
+          ${inner}
+        </div>`;
+      }
+      html += `<div class="msg-row ${isMe?'me':'other'}" data-id="${m.id}">${body}</div>`;
+    });
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+    box.querySelectorAll('.msg-row').forEach(row=>{
+      const id = row.dataset.id;
+      row.querySelectorAll('[data-act]').forEach(btn=>{
+        btn.onclick = ()=>this.msgAction(btn.dataset.act, id);
+      });
+    });
+  },
+  async msgAction(act, id){
+    const c = this.getConv(this.chats.activeId);
+    const m = c.messages.find(x=>x.id===id);
+    if(!m) return;
+    const me = c.isCloud ? this.user.username : 'me';
+    if(act==='reply'){ this.replyTarget = id; this.renderReplyBar(); return; }
+    if(act==='forward'){
+      const target = prompt('Forward to conversation id (see sidebar; "saved" for Saved Messages):', 'saved');
+      const tc = this.getConv(target);
+      if(!tc) return;
+      const fwd = { text:m.text, ts:Date.now(), attachments:m.attachments||[], forwardedFrom:c.name, reactions:{}, deletedFor:[], pinned:false, starred:false };
+      if(tc.isCloud){ fwd.from = this.user.username; fwd.fromUid = this.user.deviceUid; fwd.seenBy = [this.user.username]; await CloudChat.sendMessage(tc.id, fwd); }
+      else { fwd.id = 'm'+Date.now(); fwd.from = 'me'; tc.messages.push(fwd); this.save(); this.renderConvList(); if(this.chats.activeId===tc.id) this.renderMessages(); }
+      return;
+    }
+    if(act==='pin'){
+      if(c.isCloud) await CloudChat.updateMessage(c.id, id, { pinned: !m.pinned });
+      else { m.pinned = !m.pinned; this.save(); this.renderMessages(); }
+      this.renderHead();
+      return;
+    }
+    if(act==='star'){
+      if(c.isCloud) await CloudChat.updateMessage(c.id, id, { starred: !m.starred });
+      else { m.starred = !m.starred; this.save(); this.renderMessages(); }
+      return;
+    }
+    if(act==='copy'){ navigator.clipboard.writeText(m.text||''); return; }
+    if(act==='edit'){
+      const nt = prompt('Edit message:', m.text);
+      if(nt===null) return;
+      if(c.isCloud) await CloudChat.updateMessage(c.id, id, { text: nt, edited: true });
+      else { m.text = nt; m.edited = true; this.save(); this.renderMessages(); }
+      return;
+    }
+    if(act==='delme'){
+      if(c.isCloud) await CloudChat.updateMessage(c.id, id, { deletedFor: FBX.arrayUnion(me) });
+      else { m.deletedFor = m.deletedFor||[]; m.deletedFor.push('me'); this.save(); this.renderMessages(); this.renderConvList(); }
+      return;
+    }
+    if(act==='delall'){
+      if(c.isCloud) await CloudChat.updateMessage(c.id, id, { deletedFor: ['everyone'] });
+      else { m.deletedFor = ['everyone']; this.save(); this.renderMessages(); this.renderConvList(); }
+      return;
+    }
+    if(act==='react'){
+      const anchor = document.querySelector('.msg-row[data-id="'+CSS.escape(id)+'"] [data-act="react"]') || document.body;
+      const emoji = await EmojiPicker.pick(anchor);
+      if(!emoji) return;
+      const already = ((m.reactions||{})[emoji]||[]).includes(me);
+      if(c.isCloud){
+        await CloudChat.updateMessage(c.id, id, { ['reactions.'+emoji]: already ? FBX.arrayRemove(me) : FBX.arrayUnion(me) });
+      } else {
+        m.reactions = m.reactions||{}; m.reactions[emoji] = m.reactions[emoji]||[];
+        if(already) m.reactions[emoji] = m.reactions[emoji].filter(u=>u!==me); else m.reactions[emoji].push(me);
+        this.save(); this.renderMessages();
+      }
+    }
+  },
+  renderReplyBar(){
+    const bar = document.getElementById('replyBar');
+    if(!this.replyTarget){ bar.classList.add('hidden'); return; }
+    const c = this.getConv(this.chats.activeId);
+    const m = c.messages.find(x=>x.id===this.replyTarget);
+    bar.classList.remove('hidden');
+    bar.innerHTML = `Replying to: ${escapeHtml((m.text||'attachment').slice(0,50))}<span class="x" id="cancelReply">✕</span>`;
+    document.getElementById('cancelReply').onclick = ()=>{ this.replyTarget=null; this.renderReplyBar(); };
+  },
+  renderComposer(){
+    const c = this.getConv(this.chats.activeId);
+    document.getElementById('composer').innerHTML = `
+      <button class="ghost" id="emojiBtn" title="Emoji">😊</button>
+      <button class="ghost" id="attachBtn" title="Attach">📎</button>
+      <input type="file" id="fileInput" class="hidden">
+      <textarea id="msgInput" rows="1" placeholder="Message ${c.name}...  (try /shrug, /me, /tableflip)">${c.draft||''}</textarea>
+      <button id="sendBtn">Send</button>
+    `;
+    document.getElementById('replyBar').classList.add('hidden');
+    const input = document.getElementById('msgInput');
+    input.focus();
+    input.oninput = ()=>{
+      c.draft = input.value;
+      if(c.isCloud){
+        CloudChat.setTyping(c.id, this.user.username, true);
+        clearTimeout(this._typingClearTimer);
+        this._typingClearTimer = setTimeout(()=>CloudChat.setTyping(c.id, this.user.username, false), 3000);
+      } else this.save();
+    };
+    const handleFile = (f)=>{
+      if(!f) return;
+      if(c.isCloud && f.size > 700*1024){ alert('Attachments in cloud chats are limited to ~700KB (Firestore document size limit).'); return; }
+      const reader = new FileReader();
+      reader.onload = ()=>this.sendMessage('', [{ name:f.name, type:f.type, data:reader.result }]);
+      reader.readAsDataURL(f);
+    };
+    document.getElementById('attachBtn').onclick = ()=>document.getElementById('fileInput').click();
+    document.getElementById('fileInput').onchange = (e)=>handleFile(e.target.files[0]);
+    document.getElementById('emojiBtn').onclick = async (e)=>{
+      const emoji = await EmojiPicker.pick(e.currentTarget);
+      if(!emoji) return;
+      const pos = input.selectionStart != null ? input.selectionStart : input.value.length;
+      input.value = input.value.slice(0,pos) + emoji + input.value.slice(input.selectionEnd != null ? input.selectionEnd : pos);
+      c.draft = input.value;
+      input.focus();
+      input.setSelectionRange(pos+emoji.length, pos+emoji.length);
+    };
+    document.getElementById('sendBtn').onclick = ()=>{
+      const text = input.value.trim();
+      if(!text) return;
+      this.sendMessage(text, []);
+    };
+    input.onkeydown = (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); document.getElementById('sendBtn').click(); } };
+    document.getElementById('msgs').ondragover = (e)=>e.preventDefault();
+    document.getElementById('msgs').ondrop = (e)=>{ e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
+  },
+  containsSwear(text){
+    const s = VSC.currentSettings;
+    if(!s.swearFilter) return false;
+    const words = (s.swearWords ? s.swearWords.split(',') : SWEAR_DEFAULT).map(w=>w.trim().toLowerCase()).filter(Boolean);
+    const lower = (text||'').toLowerCase();
+    return words.some(w=>w && lower.includes(w));
+  },
+  triggerBlackout(){
+    document.getElementById('blackout').classList.add('on');
+    setTimeout(()=>{
+      if(!VSC.currentSettings.swearFilter) document.getElementById('blackout').classList.remove('on');
+    }, 50);
+  },
+  async sendMessage(text, attachments){
+    const c = this.getConv(this.chats.activeId);
+    if(text) text = applySlashCommand(text);
+    const replyTo = this.replyTarget || null;
+    this.replyTarget = null;
+    c.draft = '';
+    if(this.containsSwear(text)) this.triggerBlackout();
+    if(c.isCloud){
+      CloudChat.setTyping(c.id, this.user.username, false);
+      clearTimeout(this._typingClearTimer);
+      await CloudChat.sendMessage(c.id, {
+        from: this.user.username, fromUid: this.user.deviceUid, text, ts: Date.now(),
+        attachments, reactions:{}, replyTo, deletedFor:[], seenBy:[this.user.username], edited:false, pinned:false, starred:false
+      });
+    } else {
+      const msg = { id:'m'+Date.now()+Math.random().toString(36).slice(2,6), from:'me', text, ts:Date.now(), attachments, reactions:{}, seen:false, replyTo };
+      c.messages.push(msg);
+      this.save();
+      this.renderMessages();
+      this.renderConvList();
+    }
+    this.renderComposer();
+  },
+  showTyping(on, name){
+    const area = document.getElementById('typingIndArea');
+    area.innerHTML = on ? `<div class="typing-ind">${escapeHtml(name||'Someone')} is typing...</div>` : '';
+  }
+};
+function formatTime(ts){
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+const ACCENTS = {
+  purple:['#8a5cff','#5cd6ff'], blue:['#5cd6ff','#4ee6a8'],
+  pink:['#ff5cae','#8a5cff'], green:['#4ee6a8','#5cd6ff'], amber:['#ffb84e','#ff5c7a']
+};
+function applyTheme(s){
+  const [a1,a2] = ACCENTS[s.accent] || ACCENTS.purple;
+  const root = document.documentElement.style;
+  root.setProperty('--accent', a1);
+  root.setProperty('--accent2', a2);
+  root.setProperty('--blur', (s.blur||16)+'px');
+  root.setProperty('--alpha', s.alpha||0.45);
+  root.setProperty('--glass', `rgba(20,16,40,${s.alpha||0.45})`);
+  document.body.style.fontSize = (s.fontSize||14)+'px';
+}
+
+const SettingsUI = {
+  open(){
+    const s = VSC.currentSettings;
+    const modal = document.getElementById('settingsModal');
+    modal.classList.remove('hidden');
+    modal.innerHTML = `<div class="glass panel">
+      <button class="close-x" id="closeSet">✕</button>
+      <h1>Settings</h1>
+
+      <div class="set-group">
+        <h4>Appearance</h4>
+        <div class="set-row"><span>Accent colour</span>
+          <select id="s_accent">${Object.keys(ACCENTS).map(k=>`<option value="${k}" ${s.accent===k?'selected':''}>${k}</option>`).join('')}</select>
+        </div>
+        <div class="set-row"><span>Blur strength</span><input type="range" id="s_blur" min="0" max="30" value="${s.blur}"></div>
+        <div class="set-row"><span>Transparency</span><input type="range" id="s_alpha" min="0.1" max="0.9" step="0.05" value="${s.alpha}"></div>
+        <div class="set-row"><span>Font size</span><input type="range" id="s_font" min="12" max="18" value="${s.fontSize}"></div>
+      </div>
+
+      <div class="set-group">
+        <h4>Swear Filter</h4>
+        <div class="set-row"><span>Enable filter (blackout on trigger)</span>
+          <label class="switch"><input type="checkbox" id="s_swear" ${s.swearFilter?'checked':''}><span class="slider-tog"></span></label>
+        </div>
+        <div class="field"><label>Filtered words (comma separated)</label><input id="s_swearWords" value="${s.swearWords}"></div>
+      </div>
+
+      <div class="set-group">
+        <h4>Panic Password</h4>
+        <div class="field"><label>Panic password (opens fake dashboard on login)</label><input id="s_panicPw" value="${s.panicPassword}"></div>
+      </div>
+
+      <div class="set-group">
+        <h4>Privacy Mode</h4>
+        <div class="set-row"><span>Enable privacy mode</span>
+          <label class="switch"><input type="checkbox" id="s_privacy" ${s.privacyMode?'checked':''}><span class="slider-tog"></span></label>
+        </div>
+        <div class="field"><label>Panic hotkey (e.g. ctrl+shift+space)</label><input id="s_hotkey" value="${s.panicHotkey}"></div>
+        <div class="set-row"><span>Re-auth required</span>
+          <select id="s_reauth"><option value="master" ${s.privacyReauth==='master'?'selected':''}>Master Password only</option><option value="full" ${s.privacyReauth==='full'?'selected':''}>Full authentication</option></select>
+        </div>
+        <div class="field"><label>Auto-lock after inactivity (minutes, 0=off)</label><input type="number" id="s_autolock" min="0" value="${s.autoLockMin}"></div>
+      </div>
+
+      <div class="set-group">
+        <h4>Notifications</h4>
+        <div class="set-row"><span>Notification sound</span>
+          <label class="switch"><input type="checkbox" id="s_notif" ${s.notifSound?'checked':''}><span class="slider-tog"></span></label>
+        </div>
+      </div>
+
+      ${VSC.currentUser.cloud ? `
+      <div class="set-group">
+        <h4>Cloud Account</h4>
+        <div class="field"><label>Current Master Password</label><input type="password" id="s_curPw"></div>
+        <div class="field"><label>New Master Password</label><input type="password" id="s_newPw"></div>
+        <button type="button" class="ghost" id="s_changePw" style="width:100%;">Change Master Password</button>
+        <div class="err" id="s_pwErr"></div>
+      </div>` : ''}
+
+      <div class="set-group">
+        <h4>Backup &amp; Restore</h4>
+        <div class="row">
+          <button type="button" class="ghost" id="s_export">Export Backup</button>
+          <button type="button" class="ghost" id="s_import">Import Backup</button>
+        </div>
+        <input type="file" id="s_importFile" class="hidden" accept=".json">
+      </div>
+
+      <button id="s_save" style="width:100%;margin-top:10px;">Save Settings</button>
+      <button class="ghost danger" id="s_logout" style="width:100%;margin-top:10px;">Sign Out</button>
+    </div>`;
+
+    document.getElementById('closeSet').onclick = ()=>modal.classList.add('hidden');
+    if(VSC.currentUser.cloud){
+      document.getElementById('s_changePw').onclick = async ()=>{
+        const cur = document.getElementById('s_curPw').value;
+        const nw = document.getElementById('s_newPw').value;
+        const errEl = document.getElementById('s_pwErr');
+        if(nw.length<8){ errEl.textContent='New password must be at least 8 characters.'; return; }
+        try{
+          const u = VSC.currentUser;
+          const ok = await Crypto.verify(cur, u.master.salt, u.master.hash);
+          if(!ok){ errEl.style.color='var(--danger)'; errEl.textContent='Current password is incorrect.'; return; }
+          const newHash = await Crypto.hash(nw);
+          await FBX.updateDoc(FBX.doc(FBX.db, 'vsc_users', u.username.toLowerCase(), 'private', 'security'), { master: newHash });
+          u.master = newHash;
+          Store.saveUser(u);
+          errEl.style.color = 'var(--ok)';
+          errEl.textContent = 'Password updated.';
+        }catch(e){ errEl.style.color='var(--danger)'; errEl.textContent = friendlyFbError(e); }
+      };
+    }
+    document.getElementById('s_export').onclick = ()=>{
+      const blob = new Blob([Store.exportAll()], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'vsc-backup.json'; a.click();
+    };
+    document.getElementById('s_import').onclick = ()=>document.getElementById('s_importFile').click();
+    document.getElementById('s_importFile').onchange = (e)=>{
+      const f = e.target.files[0]; if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{ Store.importAll(reader.result); alert('Backup restored. Reloading...'); location.reload(); };
+      reader.readAsText(f);
+    };
+    document.getElementById('s_logout').onclick = ()=>{
+      Store.clearSession();
+      location.reload();
+    };
+    document.getElementById('s_save').onclick = ()=>{
+      const ns = {
+        accent: document.getElementById('s_accent').value,
+        blur: parseInt(document.getElementById('s_blur').value),
+        alpha: parseFloat(document.getElementById('s_alpha').value),
+        fontSize: parseInt(document.getElementById('s_font').value),
+        swearFilter: document.getElementById('s_swear').checked,
+        swearWords: document.getElementById('s_swearWords').value,
+        panicPassword: document.getElementById('s_panicPw').value,
+        panicHotkey: document.getElementById('s_hotkey').value.trim(),
+        privacyMode: document.getElementById('s_privacy').checked,
+        privacyReauth: document.getElementById('s_reauth').value,
+        autoLockMin: parseInt(document.getElementById('s_autolock').value)||0,
+        notifSound: document.getElementById('s_notif').checked
+      };
+      VSC.currentSettings = ns;
+      Store.saveSettings(VSC.currentUser.username, ns);
+      applyTheme(ns);
+      PrivacyGuard.init(ns);
+      if(!ns.swearFilter) document.getElementById('blackout').classList.remove('on');
+      modal.classList.add('hidden');
+    };
+  }
+};
+
+VSC.onAuthenticated = function(username, isFake){
+  const user = Store.getUser(username);
+  VSC.currentUser = user;
+  VSC.currentSettings = Store.getSettings(username);
+  VSC.isFakeSession = isFake;
+  VSC.universityMode = false;
+  applyTheme(VSC.currentSettings);
+  document.getElementById('authScreen').innerHTML = '';
+  document.getElementById('authScreen').classList.add('hidden');
+  if(isFake){
+    FakeDash.mount();
+  } else {
+    ChatApp.mount(user);
+    PrivacyGuard.init(VSC.currentSettings);
+  }
+};
+
+// Public university cover session: physics hub only, no chat, no privacy guard.
+VSC.openUniversityHub = function(){
+  VSC.currentUser = null;
+  VSC.currentSettings = Store.getSettings('university');
+  VSC.isFakeSession = true;
+  VSC.universityMode = true;
+  applyTheme(VSC.currentSettings);
+  document.getElementById('authScreen').innerHTML = '';
+  document.getElementById('authScreen').classList.add('hidden');
+  FakeDash.mount();
+};
+
+(function boot(){
+  const db = Store.db();
+  if(db.sessionUser && Store.getUser(db.sessionUser)){
+    VSC.onAuthenticated(db.sessionUser, false);
+  } else {
+    AuthFlow.go('welcome');
+  }
+})();
+</script>
+
+<script type="module">
+  if(window.__VSC_CFG_OK){
+    try{
+      const FBVER='https://www.gstatic.com/firebasejs/10.12.2/';
+      const [appM, authM, fsM] = await Promise.all([
+        import(FBVER+'firebase-app.js'),
+        import(FBVER+'firebase-auth.js'),
+        import(FBVER+'firebase-firestore.js')
+      ]);
+      const app = appM.initializeApp(window.firebaseConfig);
+      const auth = authM.getAuth(app);
+      let db;
+      try{ db = fsM.initializeFirestore(app, {localCache: fsM.persistentLocalCache({tabManager: fsM.persistentMultipleTabManager()})}); }
+      catch(e){ db = fsM.getFirestore(app); }
+      window.FBX = {
+        auth, db,
+        signInAnonymously: authM.signInAnonymously,
+        onAuthStateChanged: authM.onAuthStateChanged,
+        doc: fsM.doc, getDoc: fsM.getDoc, setDoc: fsM.setDoc, updateDoc: fsM.updateDoc,
+        collection: fsM.collection, onSnapshot: fsM.onSnapshot, getDocs: fsM.getDocs,
+        query: fsM.query, where: fsM.where, orderBy: fsM.orderBy, limit: fsM.limit,
+        addDoc: fsM.addDoc, serverTimestamp: fsM.serverTimestamp,
+        arrayUnion: fsM.arrayUnion, arrayRemove: fsM.arrayRemove
+      };
+      await new Promise((resolve, reject)=>{
+        authM.onAuthStateChanged(auth, user=>{ if(user) resolve(); }, reject);
+        authM.signInAnonymously(auth).catch(reject);
+      });
+      window.__VSC_FB_READY = true;
+      if(window.onFirebaseReady) window.onFirebaseReady();
+    }catch(e){ console.error('VSC Firebase init failed', e); window.__VSC_FB_ERROR = e; }
+  }
+</script>
+</body>
+</html>
